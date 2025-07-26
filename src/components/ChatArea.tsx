@@ -387,8 +387,6 @@ export function ChatArea({ messages, setMessages }: ChatAreaProps) {
                 setInput={setInput}
                 onSend={handleSend}
                 isLoading={isLoading}
-                showSuggestions={showSuggestions}
-                setShowSuggestions={setShowSuggestions}
                 messagesLength={messages.length}
             />
         </div>

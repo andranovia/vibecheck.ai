@@ -23,8 +23,6 @@ interface ChatInputProps {
   setInput: (value: string) => void;
   onSend: () => void;
   isLoading: boolean;
-  showSuggestions: boolean;
-  setShowSuggestions: (show: boolean) => void;
   messagesLength: number;
 }
 
@@ -33,13 +31,10 @@ export function ChatInput({
   setInput, 
   onSend, 
   isLoading, 
-  showSuggestions, 
-  setShowSuggestions, 
   messagesLength 
 }: ChatInputProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [selectedModel, setSelectedModel] = useState("vibecheck-pro");
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const models = [
@@ -47,8 +42,6 @@ export function ChatInput({
     { id: "mood-analyzer", name: "Mood Analyzer", icon: Brain, color: "text-purple-500" },
     { id: "creative-companion", name: "Creative Companion", icon: Sparkles, color: "text-pink-500" }
   ];
-
-  const quickEmojis = ["😊", "😢", "😍", "😴", "🤔", "😤", "🎉", "💙"];
 
   const handleVoiceToggle = () => {
     setIsRecording(!isRecording);
@@ -62,11 +55,6 @@ export function ChatInput({
   const handleImageUpload = () => {
     // Image upload logic would go here
     console.log("Image upload clicked");
-  };
-
-  const handleEmojiSelect = (emoji: string) => {
-    setInput(input + emoji);
-    setShowEmojiPicker(false);
   };
 
   const currentModel = models.find(m => m.id === selectedModel);
@@ -114,13 +102,13 @@ export function ChatInput({
       {/* Main Input Area */}
       <div className="p-6">
         <div className="max-w-4xl mx-auto">
-          <div className="flex gap-4 items-end">
+          <div className="flex gap-3 items-end">
             {/* Left Action Buttons */}
             <div className="flex flex-col gap-2">
               <Button
                 variant="outline"
                 size="icon"
-                className="h-10 w-10 hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
+                className="h-9 w-9 hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
                 onClick={handleFileUpload}
               >
                 <Paperclip className="h-4 w-4" />
@@ -129,7 +117,7 @@ export function ChatInput({
               <Button
                 variant="outline"
                 size="icon"
-                className="h-10 w-10 hover:bg-accent/10 hover:border-accent/30 transition-all duration-200"
+                className="h-9 w-9 hover:bg-accent/10 hover:border-accent/30 transition-all duration-200"
                 onClick={handleImageUpload}
               >
                 <ImageIcon className="h-4 w-4" />
@@ -143,9 +131,6 @@ export function ChatInput({
                   value={input}
                   onChange={(e) => {
                     setInput(e.target.value);
-                    if (e.target.value.trim() && showSuggestions) {
-                      setShowSuggestions(false);
-                    }
                   }}
                   placeholder="Share your thoughts, feelings, or what's on your mind..."
                   className="min-h-[80px] max-h-[160px] resize-none border-border/50 focus:border-primary/50 transition-all duration-300 bg-background/80 backdrop-blur-sm hover:bg-background/90 focus:bg-background pr-20 pl-4 py-4 text-base rounded-xl"
@@ -159,14 +144,7 @@ export function ChatInput({
 
                 {/* Input Actions */}
                 <div className="absolute right-3 bottom-3 flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 hover:bg-muted/50 relative"
-                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  >
-                    <Smile className="h-4 w-4" />
-                  </Button>
+                
                   
                   <Button
                     variant="ghost"
@@ -185,24 +163,6 @@ export function ChatInput({
                     )}
                   </Button>
 
-                  {/* Emoji Picker Popup */}
-                  {showEmojiPicker && (
-                    <div className="absolute bottom-12 right-0 bg-card border border-border rounded-lg p-3 shadow-lg z-50 animate-fade-in">
-                      <div className="grid grid-cols-4 gap-2">
-                        {quickEmojis.map((emoji, index) => (
-                          <Button
-                            key={index}
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 hover:bg-muted/50"
-                            onClick={() => handleEmojiSelect(emoji)}
-                          >
-                            {emoji}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 {/* Character Counter */}
@@ -227,7 +187,7 @@ export function ChatInput({
               <Button
                 onClick={onSend}
                 disabled={!input.trim() || isLoading}
-                className="h-[80px] px-8 bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary/95 hover:to-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group relative overflow-hidden"
+                className="h-[40px] px-8 bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary/95 hover:to-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group relative overflow-hidden"
               >
                 {/* Shimmer effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 animate-shimmer opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -263,7 +223,6 @@ export function ChatInput({
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    setShowSuggestions(true);
                     setInput("");
                   }}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors"
