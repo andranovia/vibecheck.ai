@@ -61,7 +61,7 @@ export function ChatInput({
   const ModelIcon = currentModel?.icon || Bot;
 
   return (
-    <div className="border-t border-border/50 bg-gradient-to-r from-card/80 via-card/90 to-card/80 backdrop-blur-sm relative z-10">
+    <div className="border-t border-border/50 bg-gradient-to-r from-card/80 via-card/90 to-card/80 backdrop-blur-sm fixed bottom-0 w-full z-10">
       {/* Model Selector */}
       <div className="px-6 py-3 border-b border-border/30">
         <div className="max-w-4xl mx-auto flex items-center justify-between">

@@ -181,7 +181,7 @@ export function ChatArea({ messages, setMessages }: ChatAreaProps) {
     };
 
     return (
-        <div className="flex-1 flex flex-col h-full relative overflow-hidden">
+        <div className="flex-1 flex flex-col h-full relative overflow-hidden mb-[15rem]">
             {/* Animated Background */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-1/4 left-[30%] w-64 h-64 bg-gradient-to-r from-primary/10 to-accent/10 rounded-full blur-3xl animate-pulse-slow"></div>
@@ -261,8 +261,8 @@ export function ChatArea({ messages, setMessages }: ChatAreaProps) {
 
             {/* Messages */}
             {messages.length > 0 && (
-                <ScrollArea className="flex-1 p-6 relative z-10">
-                    <div className="space-y-6 max-w-4xl mx-auto">
+                <ScrollArea className="flex-1 p-6 relative z-10 h-full">
+                    <div className="space-y-14 max-w-4xl mx-auto mb-[5rem]">
                         {messages.map((message, index) => (
                             <div
                                 key={message.id}
@@ -278,12 +278,12 @@ export function ChatArea({ messages, setMessages }: ChatAreaProps) {
                                     </Avatar>
                                 )}
 
-                                <div className={`max-w-[75%] ${message.type === 'user' ? 'order-1' : ''}`}>
+                                <div className={`max-w-[75%] `}>
                                     <Card className={`group hover:shadow-lg transition-all duration-300 ${message.type === 'user'
-                                            ? 'bg-gradient-to-br from-primary to-primary/90 text-primary-foreground ml-auto hover:scale-105'
+                                            ? 'bg-gradient-to-br from-primary to-primary/90 text-primary-foreground ml-auto py-4'
                                             : 'bg-card/80 backdrop-blur-sm border-border/50 hover:bg-card/90 hover:border-primary/20'
                                         }`}>
-                                        <CardContent className="p-5">
+                                        <CardContent>
                                             <p className="text-sm leading-relaxed">{message.content}</p>
 
                                             {message.mood && (
