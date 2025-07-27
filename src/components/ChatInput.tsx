@@ -39,7 +39,6 @@ export function ChatInput({
 
   const models = [
     { id: "vibecheck-pro", name: "VibeCheck Pro", icon: Zap, color: "text-primary" },
-    { id: "mood-analyzer", name: "Mood Analyzer", icon: Brain, color: "text-purple-500" },
     { id: "creative-companion", name: "Creative Companion", icon: Sparkles, color: "text-pink-500" }
   ];
 
