@@ -158,7 +158,7 @@ export function ChatInput({
       <div className="sticky bottom-0 z-50 bg-background/80 backdrop-blur-xl border-t border-border/50">
         <div className="max-w-4xl mx-auto p-4">
           {/* Main Input Container */}
-          <div className="relative bg-background rounded-2xl border border-border/60 shadow-lg hover:shadow-xl transition-all duration-300 group">
+          <div className="relative bg-background rounded-2xl border border-border/60  group">
             {/* Model Selector Bar */}
             <div className="flex items-center justify-between px-4 py-2 border-b border-border/30">
               <DropdownMenu>
