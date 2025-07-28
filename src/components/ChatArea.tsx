@@ -181,7 +181,7 @@ export function ChatArea({ messages, setMessages }: ChatAreaProps) {
     };
 
     return (
-        <div className="flex-1 flex flex-col h-full relative overflow-hidden mb-[15rem]">
+        <div className="flex-1 flex flex-col h-full relative overflow-hidden">
             {/* Animated Background */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-1/4 left-[30%] w-64 h-64 bg-gradient-to-r from-primary/10 to-accent/10 rounded-full blur-3xl animate-pulse-slow"></div>
