@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { useApiKeysStore, CustomProxy } from "@/lib/store";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +41,9 @@ interface ChatInputProps {
   onSend: () => void;
   isLoading: boolean;
   messagesLength: number;
+  onOpenSettings?: () => void;
+  onModeChange?: (mode: string) => void;
+  onModelChange?: (model: string) => void;
 }
 
 interface AIModel {
@@ -59,11 +63,29 @@ export function ChatInput({
   onSend,
   isLoading,
   messagesLength,
+  onOpenSettings,
+  onModeChange,
+  onModelChange,
 }: ChatInputProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [selectedMode, setSelectedMode] = useState("vibecheck-pro");
-  const [selectedModel, setSelectedModel] = useState("gpt-4");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { defaultModel, customProxies, setDefaultModel } = useApiKeysStore();
+  const [selectedModel, setSelectedModel] = useState(defaultModel);
+  
+  // Update selected model when default changes
+  useEffect(() => {
+    setSelectedModel(defaultModel);
+  }, [defaultModel]);
+  
+  // When user changes model, update the default
+  const handleModelChange = (modelId: string) => {
+    setSelectedModel(modelId);
+    setDefaultModel(modelId);
+    if (onModelChange) {
+      onModelChange(modelId);
+    }
+  };
 
   const modes = [
     {
@@ -128,9 +150,19 @@ export function ChatInput({
     },
   ];
 
-  const customProxies: AIModel[] = [];
+  // Convert custom proxies to AIModel format
+  const customProxyModels: AIModel[] = customProxies.map(proxy => ({
+    id: proxy.id,
+    name: proxy.configName,
+    provider: proxy.provider,
+    icon: RouteOff,
+    color: "text-teal-600",
+    description: `${proxy.modelName} (${proxy.endpoint})`,
+    features: proxy.features,
+    isCustom: true
+  }));
 
-  const allModels = [...models, ...customProxies];
+  const allModels = [...models, ...customProxyModels];
 
   const handleVoiceToggle = () => {
     setIsRecording(!isRecording);
@@ -202,7 +234,7 @@ export function ChatInput({
                     return (
                       <DropdownMenuItem
                         key={model.id}
-                        onClick={() => setSelectedModel(model.id)}
+                        onClick={() => handleModelChange(model.id)}
                         className="p-3 cursor-pointer focus:bg-muted/50"
                       >
                         <div className="flex items-start gap-3 w-full">
@@ -226,7 +258,7 @@ export function ChatInput({
                             <p className="text-xs text-muted-foreground mt-0.5">
                               {model.description}
                             </p>
-                            <div className="flex gap-1 mt-1">
+                            <div className="flex gap-1 mt-1 pt-2">
                               {model.features.map((feature) => (
                                 <Badge
                                   key={feature}
@@ -247,20 +279,20 @@ export function ChatInput({
 
                   <div className="px-2 py-1.5">
                     <p className="text-sm font-medium text-foreground">
-                      Custom Proxies
+                      Custom Configurations
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Your own API endpoints
+                      Your custom model configurations
                     </p>
                   </div>
 
-                  {customProxies && customProxies?.length > 0 ? (
-                    customProxies.map((model) => {
+                  {customProxyModels && customProxyModels?.length > 0 ? (
+                    customProxyModels.map((model) => {
                       const Icon = model.icon;
                       return (
                         <DropdownMenuItem
                           key={model.id}
-                          onClick={() => setSelectedModel(model.id)}
+                          onClick={() => handleModelChange(model.id)}
                           className="p-3 cursor-pointer focus:bg-muted/50"
                         >
                           <div className="flex items-start gap-3 w-full">
@@ -340,7 +372,12 @@ export function ChatInput({
                           ? "bg-primary/10 text-primary hover:text-primary hover:bg-primary/10"
                           : "hover:bg-muted/50"
                       }`}
-                      onClick={() => setSelectedMode(mode.id)}
+                      onClick={() => {
+                        setSelectedMode(mode.id);
+                        if (onModeChange) {
+                          onModeChange(mode.id);
+                        }
+                      }}
                     >
                       <Icon className="h-3 w-3 mr-1" />
                       <span className="text-xs">{mode.name.split(" ")[0]}</span>
@@ -479,6 +516,7 @@ export function ChatInput({
                         variant="ghost"
                         size="sm"
                         className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={onOpenSettings}
                       >
                         <Settings className="h-3 w-3 mr-1" />
                         Settings

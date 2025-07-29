@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { ChatInput } from "./ChatInput";
+import { SettingsModal } from "./SettingsModal";
+import { useApiKeysStore } from "@/lib/store";
 import {
     Sparkles,
     User,
@@ -20,7 +22,8 @@ import {
     Sun,
     Moon,
     Smile,
-    MessageCircle
+    MessageCircle,
+    Settings as SettingsIcon
 } from "lucide-react";
 
 interface Message {
@@ -46,6 +49,9 @@ export function ChatArea({ messages, setMessages }: ChatAreaProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(true);
     const [currentGreeting, setCurrentGreeting] = useState(0);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [currentMode, setCurrentMode] = useState('vibecheck-pro');
+    const { openRouterApiKey, defaultModel } = useApiKeysStore();
 
     const greetings = [
         "What's on your mind today?",
@@ -91,20 +97,39 @@ export function ChatArea({ messages, setMessages }: ChatAreaProps) {
         setIsLoading(true);
         setShowSuggestions(false);
 
-        // Simulate AI response with more realistic content
-        setTimeout(() => {
-            const mood = getRandomMood();
-            const aiResponse: Message = {
-                id: (Date.now() + 1).toString(),
-                type: 'assistant',
-                content: `I can sense you're feeling ${mood}. ${getPersonalizedResponse(mood)} Here are some personalized recommendations to enhance your current vibe!`,
-                timestamp: new Date(),
-                mood: mood,
-                recommendations: getRecommendationsForMood(mood)
-            };
+        try {
+            // Import dynamically to avoid SSR issues with zustand
+            const { generateResponse } = await import('@/lib/chatService');
+            const { useApiKeysStore } = await import('@/lib/store');
+            
+            const selectedModel = useApiKeysStore.getState().defaultModel;
+            
+            const aiResponse = await generateResponse(
+                userMessage.content,
+                messages,
+                {
+                    model: selectedModel,
+                    temperature: 0.7,
+                    maxTokens: 1000,
+                    mode: currentMode, // Use current selected mode
+                }
+            );
+            
             setMessages(prev => [...prev, aiResponse]);
+        } catch (error) {
+            console.error('Error sending message:', error);
+            
+            // Show error message
+            const errorResponse: Message = {
+                id: Date.now().toString(),
+                type: 'assistant',
+                content: 'Sorry, I encountered an error. Please check your API settings or try again later.',
+                timestamp: new Date(),
+            };
+            setMessages(prev => [...prev, errorResponse]);
+        } finally {
             setIsLoading(false);
-        }, 1500);
+        }
     };
 
     const getPersonalizedResponse = (mood: string) => {
@@ -388,6 +413,15 @@ export function ChatArea({ messages, setMessages }: ChatAreaProps) {
                 onSend={handleSend}
                 isLoading={isLoading}
                 messagesLength={messages.length}
+                onOpenSettings={() => setIsSettingsOpen(true)}
+                onModeChange={setCurrentMode}
+                onModelChange={() => {}} // We're already watching defaultModel from the store
+            />
+
+            {/* Settings Modal */}
+            <SettingsModal
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
             />
         </div>
     );
