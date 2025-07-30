@@ -150,7 +150,6 @@ export function ChatInput({
     },
   ];
 
-  // Convert custom proxies to AIModel format
   const customProxyModels: AIModel[] = customProxies.map(proxy => ({
     id: proxy.id,
     name: proxy.configName,
@@ -166,7 +165,6 @@ export function ChatInput({
 
   const handleVoiceToggle = () => {
     setIsRecording(!isRecording);
-    // Voice recording logic would go here
   };
 
   const handleFileUpload = () => {

@@ -24,6 +24,35 @@ interface ChatOptions {
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
+// Helper function to parse JSON recommendations from the AI response
+export const parseRecommendationsFromResponse = (content: string): { song?: string; quote?: string; image?: string } | null => {
+  try {
+    // Look for JSON blocks in the content, wrapped in ```json and ```
+    const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
+    
+    if (jsonMatch && jsonMatch[1]) {
+      const jsonStr = jsonMatch[1];
+      const parsedData = JSON.parse(jsonStr);
+      
+      return {
+        song: parsedData.song,
+        quote: parsedData.quote,
+        image: parsedData.moodImage || parsedData.image,
+      };
+    }
+  } catch (error) {
+    console.error('Error parsing recommendations JSON:', error);
+  }
+  
+  return null;
+};
+
+// Helper function to remove the JSON block from the content
+export const removeJsonBlockFromContent = (content: string): string => {
+  // Remove the ```json ... ``` block from the content
+  return content.replace(/```json\s*([\s\S]*?)\s*```/g, '').trim();
+};
+
 export const detectMood = (text: string): string => {
   const moodPatterns = {
     happy: /happy|joy|excited|great|wonderful|thrilled|delighted/i,
@@ -226,15 +255,63 @@ export const generateResponse = async (
     systemPrompt = `You are VibeCheck AI, an empathetic AI assistant focused on emotional well-being.
     Analyze the user's message to understand their emotional state.
     The detected mood is: ${detectedMood}.
+    
     Respond in a supportive, understanding way that acknowledges their feelings.
     Include personalized recommendations that might help enhance or improve their current emotional state.
-    Your response should be warm, personal, and insightful.`;
+    Your response should be warm, personal, and insightful.
+    
+    IMPORTANT FORMATTING INSTRUCTIONS:
+    - Use *asterisks* for emphasis (italic text)
+    - Use **double asterisks** for strong emphasis (bold text)
+    - Use ~~tildes~~ for strikethrough text
+    - Use > for blockquotes to highlight important messages
+    
+    RESPONSE STRUCTURE:
+    1. Your main message should focus on empathizing with the user's mood
+    2. Include song recommendations relevant to their mood 
+    3. Include an inspiring quote that matches their emotional state
+    
+    After your main response, add special recommendations in JSON format wrapped in triple backticks like this:
+    
+    \`\`\`json
+    {
+      "song": "Song Name - Artist",
+      "quote": "The quote text - Author",
+      "moodImage": "Brief description of an image that represents this mood"
+    }
+    \`\`\`
+    
+    The app will parse this JSON to display recommendations to the user.`;
   } else if (mode === 'creative-companion') {
     systemPrompt = `You are Creative Companion, an AI focused on inspiring creativity and imagination.
     The user's current mood seems to be: ${detectedMood}.
+    
     Respond in a way that sparks creativity and imagination.
     Offer unique perspectives, creative prompts, or artistic inspiration based on their message.
-    Your tone should be encouraging, vibrant, and thought-provoking.`;
+    Your tone should be encouraging, vibrant, and thought-provoking.
+    
+    IMPORTANT FORMATTING INSTRUCTIONS:
+    - Use *asterisks* for emphasis (italic text)
+    - Use **double asterisks** for strong emphasis (bold text)
+    - Use ~~tildes~~ for strikethrough text
+    - Use > for blockquotes to highlight important messages
+    
+    RESPONSE STRUCTURE:
+    1. Your main creative response to the user's message
+    2. Include a song that might inspire creativity related to their mood
+    3. Include an inspiring quote about creativity or imagination
+    
+    After your main response, add special recommendations in JSON format wrapped in triple backticks like this:
+    
+    \`\`\`json
+    {
+      "song": "Song Name - Artist",
+      "quote": "The quote text - Author",
+      "moodImage": "Brief description of an image that represents creative inspiration"
+    }
+    \`\`\`
+    
+    The app will parse this JSON to display recommendations to the user.`;
   }
   
   // Add system message
@@ -252,13 +329,19 @@ export const generateResponse = async (
       aiContent = await callOpenRouter(formattedMessages, options);
     }
 
+    // Parse recommendations from the JSON block in the response if available
+    const recommendations = parseRecommendationsFromResponse(aiContent) || getRecommendationsForMood(detectedMood);
+    
+    // Remove the JSON block from the displayed content
+    const cleanedContent = removeJsonBlockFromContent(aiContent);
+
     return {
       id: nanoid(),
       type: 'assistant',
-      content: aiContent,
+      content: cleanedContent,
       timestamp: new Date(),
       mood: detectedMood,
-      recommendations: getRecommendationsForMood(detectedMood),
+      recommendations: recommendations,
     };
   } catch (error) {
     console.error('Error generating response:', error);

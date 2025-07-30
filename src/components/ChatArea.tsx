@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button";
 import { ChatInput } from "./ChatInput";
 import { SettingsModal } from "./SettingsModal";
 import { useApiKeysStore } from "@/lib/store";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import {
     Sparkles,
     User,
@@ -132,63 +135,6 @@ export function ChatArea({ messages, setMessages }: ChatAreaProps) {
         }
     };
 
-    const getPersonalizedResponse = (mood: string) => {
-        const responses = {
-            calm: "That's wonderful - there's such peace in finding calm moments.",
-            energetic: "I love that energy! Let's channel it into something amazing.",
-            contemplative: "Deep thinking often leads to beautiful insights.",
-            joyful: "Your joy is contagious! Let's celebrate this feeling.",
-            peaceful: "What a beautiful state to be in - let's nurture this serenity.",
-            stressed: "I understand. Let's find some ways to ease that tension.",
-            happy: "Your happiness is radiating! Let's keep this positive energy flowing.",
-            melancholy: "Sometimes we need to sit with these feelings. You're not alone.",
-            creative: "Creativity is flowing through you! Let's inspire it further.",
-            neutral: "Sometimes neutral is exactly where we need to be."
-        };
-        return responses[mood as keyof typeof responses] || "Let me help you explore these feelings.";
-    };
-
-    const getRecommendationsForMood = (mood: string) => {
-        const recommendations = {
-            calm: {
-                song: "Ludovico Einaudi - Nuvole Bianche",
-                quote: "Peace comes from within. Do not seek it without. - Buddha",
-                image: "Misty morning lake with gentle ripples"
-            },
-            energetic: {
-                song: "Daft Punk - One More Time",
-                quote: "Energy and persistence conquer all things. - Benjamin Franklin",
-                image: "Vibrant city lights at night"
-            },
-            contemplative: {
-                song: "Max Richter - On The Nature of Daylight",
-                quote: "The unexamined life is not worth living. - Socrates",
-                image: "Ancient library with golden sunlight"
-            },
-            joyful: {
-                song: "Pharrell Williams - Happy",
-                quote: "Joy is not in things; it is in us. - Richard Wagner",
-                image: "Field of sunflowers under blue sky"
-            },
-            peaceful: {
-                song: "Ólafur Arnalds - Near Light",
-                quote: "Peace is the result of retraining your mind. - Wayne Dyer",
-                image: "Zen garden with flowing water"
-            }
-        };
-
-        return recommendations[mood as keyof typeof recommendations] || {
-            song: "Calm Piano - Peaceful Moments",
-            quote: "Every moment is a fresh beginning. - T.S. Eliot",
-            image: "Serene sunset over mountains"
-        };
-    };
-
-    const getRandomMood = () => {
-        const moods = ['calm', 'energetic', 'contemplative', 'joyful', 'peaceful', 'stressed', 'happy', 'melancholy', 'creative', 'neutral'];
-        return moods[Math.floor(Math.random() * moods.length)];
-    };
-
     const getMoodColor = (mood?: string) => {
         switch (mood) {
             case 'calm': return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
@@ -232,28 +178,12 @@ export function ChatArea({ messages, setMessages }: ChatAreaProps) {
                             </p>
                         </div>
 
-                        {/* Feature badges */}
-                        <div className="flex flex-wrap gap-3 justify-center mb-8">
-                            <Badge variant="outline" className="gap-2 py-2 px-4 hover:bg-primary/10 transition-colors cursor-default">
-                                <Music className="h-4 w-4" />
-                                <span className="text-sm">Personalized Music</span>
-                            </Badge>
-                            <Badge variant="outline" className="gap-2 py-2 px-4 hover:bg-accent/10 transition-colors cursor-default">
-                                <Quote className="h-4 w-4" />
-                                <span className="text-sm">Inspiring Quotes</span>
-                            </Badge>
-                            <Badge variant="outline" className="gap-2 py-2 px-4 hover:bg-primary/10 transition-colors cursor-default">
-                                <ImageIcon className="h-4 w-4" />
-                                <span className="text-sm">Mood Images</span>
-                            </Badge>
-                        </div>
-
                         {/* Conversation Starters */}
                         {showSuggestions && (
                             <div className="space-y-4 animate-fade-in-up">
-                                <div className="flex items-center gap-2 justify-center text-sm text-muted-foreground mb-4">
+                                <div className="flex items-center gap-2 justify-center text-sm text-muted-foreground mb-8">
                                     <MessageCircle className="h-4 w-4" />
-                                    Or try one of these conversation starters:
+                                    Or try one of these conversation starters
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl">
@@ -287,7 +217,7 @@ export function ChatArea({ messages, setMessages }: ChatAreaProps) {
             {/* Messages */}
             {messages.length > 0 && (
                 <ScrollArea className="flex-1 p-6 relative z-10 h-full">
-                    <div className="space-y-14 max-w-4xl mx-auto mb-[5rem]">
+                    <div className="space-y-14 max-w-4xl mx-auto mb-[15rem]">
                         {messages.map((message, index) => (
                             <div
                                 key={message.id}
@@ -309,7 +239,23 @@ export function ChatArea({ messages, setMessages }: ChatAreaProps) {
                                             : 'bg-card/80 backdrop-blur-sm border-border/50 hover:bg-card/90 hover:border-primary/20'
                                         }`}>
                                         <CardContent>
-                                            <p className="text-sm leading-relaxed">{message.content}</p>
+                                            <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed">
+                                                <ReactMarkdown 
+                                                    remarkPlugins={[remarkGfm]} 
+                                                    rehypePlugins={[rehypeRaw]}
+                                                    components={{
+                                                        // Override default component styles
+                                                        p: ({node, ...props}) => <p className="text-sm" {...props} />,
+                                                        strong: ({node, ...props}) => <strong className="font-bold text-primary" {...props} />,
+                                                        em: ({node, ...props}) => <em className="text-accent italic" {...props} />,
+                                                        blockquote: ({node, ...props}) => (
+                                                            <blockquote className="pl-4 border-l-2 border-primary/40 italic text-muted-foreground" {...props} />
+                                                        ),
+                                                    }}
+                                                >
+                                                    {message.content}
+                                                </ReactMarkdown>
+                                            </div>
 
                                             {message.mood && (
                                                 <div className="mt-4 flex items-center gap-2">
