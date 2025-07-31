@@ -35,10 +35,6 @@ export function Header({ onToggleSidebar }: HeaderProps) {
                 </Button>
 
                 <div className="flex items-center gap-2">
-                    <div className="relative">
-                        {/* <Sparkles className="h-6 w-6 text-primary animate-pulse" /> */}
-                        <Image src={"/vibecheck-logo.svg"} alt="Logo" width={24} height={24} className="h-8 w-8" />
-                    </div>
                     <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                         vibecheck.ai
                     </h1>
