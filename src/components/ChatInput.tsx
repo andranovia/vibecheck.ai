@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +32,10 @@ import {
   RouteOff,
   Rabbit,
   Plus,
-  Volume2,
+  Waves,
+  X,
+  Check,
+  Loader2
 } from "lucide-react";
 
 interface ChatInputProps {
@@ -57,6 +60,13 @@ interface AIModel {
   isCustom?: boolean;
 }
 
+import { VoiceRecorder } from "./VoiceRecorder";
+import { WaveSurferRecorder } from "./WaveSurferRecorder";
+import { VoiceSettingsModal } from "./VoiceSettingsModal";
+import { useVoiceStore } from "@/lib/voiceStore";
+import { transcriptionService, TranscriptionResult } from "@/lib/transcriptionService";
+import { ErrorBoundary } from "next/dist/client/components/error-boundary";
+
 export function ChatInput({
   input,
   setInput,
@@ -69,9 +79,16 @@ export function ChatInput({
 }: ChatInputProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [selectedMode, setSelectedMode] = useState("vibecheck-pro");
+  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
+  const [showRecorder, setShowRecorder] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
+  const [transcriptionText, setTranscriptionText] = useState("");
+  const [transcriptionResult, setTranscriptionResult] = useState<TranscriptionResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { defaultModel, customProxies, setDefaultModel } = useApiKeysStore();
   const [selectedModel, setSelectedModel] = useState(defaultModel);
+  const { visualizerType, autoTranscribe, primaryColor, secondaryColor, transcriptionLanguage, enableProfanityFilter } = useVoiceStore();
 
   // Update selected model when default changes
   useEffect(() => {
@@ -164,7 +181,107 @@ export function ChatInput({
   const allModels = [...models, ...customProxyModels];
 
   const handleVoiceToggle = () => {
-    setIsRecording(!isRecording);
+    if (isRecording) {
+      setIsRecording(false);
+      setShowRecorder(false);
+    } else {
+      setIsRecording(true);
+      setShowRecorder(true);
+      setTranscriptionText("");
+      setRecordedAudioUrl(null);
+    }
+  };
+  
+  const handleRecordingComplete = async (blob: Blob) => {
+    setIsRecording(false);
+    
+    // Create URL for audio playback
+    const audioUrl = URL.createObjectURL(blob);
+    setRecordedAudioUrl(audioUrl);
+    
+    if (autoTranscribe) {
+      setIsTranscribing(true);
+      try {
+        // Use real transcription service with actual blob
+        const result = await transcriptionService.transcribe(blob, {
+          language: transcriptionLanguage,
+          enableProfanityFilter,
+        });
+        setTranscriptionResult(result);
+        setTranscriptionText(result.text);
+      } catch (error) {
+        console.error("Transcription failed:", error);
+        setTranscriptionText("Transcription failed. Please try again.");
+      } finally {
+        setIsTranscribing(false);
+      }
+    }
+  };
+  
+  const simulateTranscription = async (blob: Blob): Promise<void> => {
+    if (!blob || blob.size === 0) {
+      // If no blob is provided or attempting to transcribe an empty blob
+      if (recordedAudioUrl) {
+        try {
+          // Fetch the blob from the URL
+          const response = await fetch(recordedAudioUrl);
+          const audioBlob = await response.blob();
+          
+          const result = await transcriptionService.transcribe(audioBlob, {
+            language: transcriptionLanguage,
+            enableProfanityFilter,
+          });
+          
+          setTranscriptionResult(result);
+          setTranscriptionText(result.text);
+        } catch (error) {
+          console.error("Transcription failed:", error);
+          setTranscriptionText("Transcription failed. Please try again.");
+        }
+      } else {
+        setTranscriptionText("No audio recording found to transcribe.");
+      }
+    } else {
+      // Transcribe the provided blob directly
+      try {
+        const result = await transcriptionService.transcribe(blob, {
+          language: transcriptionLanguage,
+          enableProfanityFilter,
+        });
+        
+        setTranscriptionResult(result);
+        setTranscriptionText(result.text);
+      } catch (error) {
+        console.error("Transcription failed:", error);
+        setTranscriptionText("Transcription failed. Please try again.");
+      }
+    }
+  };
+  
+  const handleAcceptTranscription = () => {
+    if (transcriptionText) {
+      // Add the transcribed text to the input field
+      // If the input already has text, add a space before the transcription
+      setInput(input.trim() ? `${input.trim()} ${transcriptionText}` : transcriptionText);
+      
+      // Clear the recording state
+      if (recordedAudioUrl) {
+        URL.revokeObjectURL(recordedAudioUrl);
+      }
+    }
+    handleRecordingCancel();
+  };
+  
+  const handleRecordingCancel = () => {
+    setIsRecording(false);
+    setShowRecorder(false);
+    setTranscriptionText("");
+    setIsTranscribing(false);
+    setTranscriptionResult(null);
+    if (recordedAudioUrl) {
+      URL.revokeObjectURL(recordedAudioUrl);
+      setRecordedAudioUrl(null);
+    }
   };
 
   const handleFileUpload = () => {
@@ -185,7 +302,7 @@ export function ChatInput({
 
   return (
     <TooltipProvider>
-      <div className="sticky bottom-0 z-50 bg-background/80 backdrop-blur-xl border-t border-border/50">
+      <div className=" bottom-0 z-50 border-t border-border/50">
         <div className="max-w-4xl mx-auto p-4">
           {/* Main Input Container */}
           <div className="relative bg-background rounded-2xl border border-border/60  group">
@@ -359,7 +476,7 @@ export function ChatInput({
                 </DropdownMenu>
                 {/* Recording Indicator */}
                 {isRecording && (
-                  <div className=" left-0 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-1 animate-in fade-in slide-in-from-bottom-2">
+                  <div className="absolute left-12 top-1/2 -translate-y-1/2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-1 animate-in fade-in slide-in-from-bottom-2">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
                       <span className="text-xs/4 text-red-600">
@@ -429,7 +546,23 @@ export function ChatInput({
                   />
 
                   {/* Voice Input Button */}
-                  <div className="absolute right-3 bottom-3">
+                  <div className="absolute right-3 bottom-3 flex gap-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 hover:bg-muted/50 transition-colors"
+                          onClick={() => setShowVoiceSettings(true)}
+                        >
+                          <Waves className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Voice settings</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -511,6 +644,23 @@ export function ChatInput({
                         variant="ghost"
                         size="sm"
                         className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => setShowVoiceSettings(true)}
+                      >
+                        <Waves className="h-3 w-3 mr-1" />
+                        Voice Settings
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Configure voice recording settings</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
                         onClick={onOpenSettings}
                       >
                         <Settings className="h-3 w-3 mr-1" />
@@ -534,10 +684,188 @@ export function ChatInput({
           className="hidden"
           accept=".pdf,.doc,.docx,.txt,.md,.json,.csv"
           onChange={(e) => {
-            // File upload logic would go here
-            console.log("File selected:", e.target.files?.[0]);
+            const file = e.target.files?.[0];
+            if (file) {
+              // Add file name to input
+              setInput((current) => {
+                const prefix = current.trim() ? `${current.trim()} ` : '';
+                return `${prefix}[Attached: ${file.name}]`;
+              });
+              
+              // Clear the file input for future uploads
+              if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+              }
+            }
           }}
         />
+        
+        {/* Voice Settings Modal */}
+        <VoiceSettingsModal 
+          open={showVoiceSettings}
+          onOpenChange={setShowVoiceSettings}
+        />
+        
+        {/* Voice Recorder Modal */}
+        {showRecorder && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-background rounded-xl shadow-2xl border border-border/50 max-w-lg w-full mx-auto overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b border-border/50">
+                <div className="flex items-center gap-2">
+                  <div className={`p-2 rounded-lg ${isRecording ? 'bg-red-500/10' : 'bg-muted/50'}`}>
+                    {isRecording ? (
+                      <Mic className="h-4 w-4 text-red-500 animate-pulse" />
+                    ) : (
+                      <Mic className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">
+                      {isRecording ? "Recording..." : recordedAudioUrl ? "Recording Complete" : "Voice Input"}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      {isRecording ? "Speak clearly into your microphone" : 
+                       recordedAudioUrl ? "Review and transcribe your recording" : 
+                       "Click the microphone to start recording"}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRecordingCancel}
+                  className="h-8 w-8 p-0 hover:bg-red-500/10 hover:text-red-500"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Voice Recorder Component */}
+              <div className="p-4">
+                {visualizerType === 'react-voice-visualizer' ? (
+                  <VoiceRecorder
+                    isRecording={isRecording}
+                    setIsRecording={setIsRecording}
+                    onRecordingComplete={handleRecordingComplete}
+                    onCancel={handleRecordingCancel}
+                  />
+                ) : (
+                  <WaveSurferRecorder
+                    isRecording={isRecording}
+                    setIsRecording={setIsRecording}
+                    onRecordingComplete={handleRecordingComplete}
+                    onCancel={handleRecordingCancel}
+                  />
+                )}
+              </div>
+
+              {/* Transcription Section */}
+              {(recordedAudioUrl || isTranscribing) && (
+                <div className="border-t border-border/50 p-4 space-y-4">
+                  {isTranscribing ? (
+                    <div className="flex items-center gap-3 p-4 bg-muted/30 rounded-lg">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <div>
+                        <p className="text-sm font-medium">Transcribing audio...</p>
+                        <p className="text-xs text-muted-foreground">Please wait while we convert your speech to text</p>
+                      </div>
+                    </div>
+                  ) : transcriptionText ? (
+                    <div className="space-y-3">
+                      <div className="p-4 bg-muted/30 rounded-lg border">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="text-sm font-medium text-foreground">Transcribed Text:</h4>
+                          {transcriptionResult && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-muted-foreground">
+                                {Math.round(transcriptionResult.confidence * 100)}% confidence
+                              </span>
+                              <div 
+                                className={`w-2 h-2 rounded-full ${
+                                  transcriptionResult.confidence > 0.9 ? 'bg-green-500' :
+                                  transcriptionResult.confidence > 0.7 ? 'bg-yellow-500' : 'bg-red-500'
+                                }`}
+                              />
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{transcriptionText}</p>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={handleAcceptTranscription}
+                          className="flex-1 h-9 bg-primary hover:bg-primary/90"
+                        >
+                          <Check className="h-4 w-4 mr-2" />
+                          Add to Message
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setTranscriptionText("");
+                            setTranscriptionResult(null);
+                          }}
+                          className="h-9 px-4"
+                        >
+                          Retry
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="p-4 bg-muted/30 rounded-lg border">
+                        <h4 className="text-sm font-medium mb-2">Audio Recorded</h4>
+                        <p className="text-xs text-muted-foreground mb-3">
+                          Recording saved successfully. Enable auto-transcription in settings or manually transcribe.
+                        </p>
+                        {recordedAudioUrl && (
+                          <audio controls className="w-full h-8">
+                            <source src={recordedAudioUrl} type="audio/wav" />
+                            Your browser does not support audio playback.
+                          </audio>
+                        )}
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={async () => {
+                            if (recordedAudioUrl) {
+                              setIsTranscribing(true);
+                              try {
+                                const response = await fetch(recordedAudioUrl);
+                                const blob = await response.blob();
+                                await simulateTranscription(blob);
+                              } catch (error) {
+                                console.error("Error transcribing:", error);
+                                setTranscriptionText("Error transcribing audio. Please try again.");
+                              } finally {
+                                setIsTranscribing(false);
+                              }
+                            }
+                          }}
+                          variant="outline"
+                          className="flex-1 h-9"
+                        >
+                          <Mic className="h-4 w-4 mr-2" />
+                          Transcribe
+                        </Button>
+                        <Button
+                          onClick={handleRecordingCancel}
+                          variant="outline"
+                          className="h-9 px-4"
+                        >
+                          Discard
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </TooltipProvider>
   );
