@@ -72,12 +72,12 @@ export function ChatInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { defaultModel, customProxies, setDefaultModel } = useApiKeysStore();
   const [selectedModel, setSelectedModel] = useState(defaultModel);
-  
+
   // Update selected model when default changes
   useEffect(() => {
     setSelectedModel(defaultModel);
   }, [defaultModel]);
-  
+
   // When user changes model, update the default
   const handleModelChange = (modelId: string) => {
     setSelectedModel(modelId);
@@ -191,101 +191,44 @@ export function ChatInput({
           <div className="relative bg-background rounded-2xl border border-border/60  group">
             {/* Model Selector Bar */}
             <div className="flex items-center justify-between px-4 py-2 border-b border-border/30">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="h-8 px-3 hover:bg-muted/50 transition-colors group/trigger"
+              <div className="flex items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="h-8 px-3 hover:bg-muted/50 transition-colors group/trigger"
+                    >
+                      <div className="flex items-center gap-2">
+                        <ModelIcon className={`h-4 w-4 ${currentModel?.color}`} />
+                        <span className="text-sm font-medium text-foreground">
+                          {currentModel?.name}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className="text-xs px-1.5 py-0.5"
+                        >
+                          {currentModel?.provider}
+                        </Badge>
+                      </div>
+                      <ChevronDown className="h-3 w-3 ml-1 opacity-50 group-hover/trigger:opacity-100 transition-opacity" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    className="w-80 p-2 -ml-4 h-[20rem] overflow-y-auto scrollbar-thin scrollbar-track-muted/20 scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/40"
+                    sideOffset={30}
                   >
-                    <div className="flex items-center gap-2">
-                      <ModelIcon className={`h-4 w-4 ${currentModel?.color}`} />
-                      <span className="text-sm font-medium text-foreground">
-                        {currentModel?.name}
-                      </span>
-                      <Badge
-                        variant="outline"
-                        className="text-xs px-1.5 py-0.5"
-                      >
-                        {currentModel?.provider}
-                      </Badge>
+                    <div className="px-2 py-1.5">
+                      <p className="text-sm font-medium text-foreground">
+                        AI Models
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Choose your preferred AI assistant
+                      </p>
                     </div>
-                    <ChevronDown className="h-3 w-3 ml-1 opacity-50 group-hover/trigger:opacity-100 transition-opacity" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="start"
-                  className="w-80 p-2 -ml-4 h-[20rem] overflow-y-auto scrollbar-thin scrollbar-track-muted/20 scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/40"
-                  sideOffset={30}
-                >
-                  <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium text-foreground">
-                      AI Models
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Choose your preferred AI assistant
-                    </p>
-                  </div>
-                  <DropdownMenuSeparator />
+                    <DropdownMenuSeparator />
 
-                  {models.map((model) => {
-                    const Icon = model.icon;
-                    return (
-                      <DropdownMenuItem
-                        key={model.id}
-                        onClick={() => handleModelChange(model.id)}
-                        className="p-3 cursor-pointer focus:bg-muted/50"
-                      >
-                        <div className="flex items-start gap-3 w-full">
-                          <Icon
-                            className={`h-5 w-5 mt-0.5 ${model.color} flex-shrink-0`}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-sm text-foreground">
-                                {model.name}
-                              </span>
-                              <Badge variant="outline" className="text-xs">
-                                {model.provider}
-                              </Badge>
-                              {selectedModel === model.id && (
-                                <Badge variant="default" className="text-xs">
-                                  Active
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {model.description}
-                            </p>
-                            <div className="flex gap-1 mt-1 pt-2">
-                              {model.features.map((feature) => (
-                                <Badge
-                                  key={feature}
-                                  variant="secondary"
-                                  className="text-xs px-1.5 py-0.5"
-                                >
-                                  {feature}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </DropdownMenuItem>
-                    );
-                  })}
-
-                  <DropdownMenuSeparator />
-
-                  <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium text-foreground">
-                      Custom Configurations
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Your custom model configurations
-                    </p>
-                  </div>
-
-                  {customProxyModels && customProxyModels?.length > 0 ? (
-                    customProxyModels.map((model) => {
+                    {models.map((model) => {
                       const Icon = model.icon;
                       return (
                         <DropdownMenuItem
@@ -314,7 +257,7 @@ export function ChatInput({
                               <p className="text-xs text-muted-foreground mt-0.5">
                                 {model.description}
                               </p>
-                              <div className="flex gap-1 mt-1">
+                              <div className="flex gap-1 mt-1 pt-2">
                                 {model.features.map((feature) => (
                                   <Badge
                                     key={feature}
@@ -329,33 +272,102 @@ export function ChatInput({
                           </div>
                         </DropdownMenuItem>
                       );
-                    })
-                  ) : (
-                    <div className="p-10 text-sm text-muted-foreground">
-                      <div className="flex flex-col items-center gap-5">
-                        <RouteOff className="h-6 w-6 text-muted-foreground" />
-                        <span className="text-sm ">No custom proxies configured.</span>
-                      </div>
-                    </div>
-                  )}
+                    })}
 
-                  <DropdownMenuSeparator />
+                    <DropdownMenuSeparator />
 
-                  <DropdownMenuItem className="p-3 cursor-pointer focus:bg-muted/50">
-                    <div className="flex items-center gap-3 w-full">
-                      <Plus className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <span className="font-medium text-sm text-foreground">
-                          Add Custom Endpoint
-                        </span>
-                        <p className="text-xs text-muted-foreground">
-                          Configure your own API
-                        </p>
-                      </div>
+                    <div className="px-2 py-1.5">
+                      <p className="text-sm font-medium text-foreground">
+                        Custom Configurations
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Your custom model configurations
+                      </p>
                     </div>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+
+                    {customProxyModels && customProxyModels?.length > 0 ? (
+                      customProxyModels.map((model) => {
+                        const Icon = model.icon;
+                        return (
+                          <DropdownMenuItem
+                            key={model.id}
+                            onClick={() => handleModelChange(model.id)}
+                            className="p-3 cursor-pointer focus:bg-muted/50"
+                          >
+                            <div className="flex items-start gap-3 w-full">
+                              <Icon
+                                className={`h-5 w-5 mt-0.5 ${model.color} flex-shrink-0`}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-sm text-foreground">
+                                    {model.name}
+                                  </span>
+                                  <Badge variant="outline" className="text-xs">
+                                    {model.provider}
+                                  </Badge>
+                                  {selectedModel === model.id && (
+                                    <Badge variant="default" className="text-xs">
+                                      Active
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {model.description}
+                                </p>
+                                <div className="flex gap-1 mt-1">
+                                  {model.features.map((feature) => (
+                                    <Badge
+                                      key={feature}
+                                      variant="secondary"
+                                      className="text-xs px-1.5 py-0.5"
+                                    >
+                                      {feature}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </DropdownMenuItem>
+                        );
+                      })
+                    ) : (
+                      <div className="p-10 text-sm text-muted-foreground">
+                        <div className="flex flex-col items-center gap-5">
+                          <RouteOff className="h-6 w-6 text-muted-foreground" />
+                          <span className="text-sm ">No custom proxies configured.</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <DropdownMenuSeparator />
+
+                    <DropdownMenuItem className="p-3 cursor-pointer focus:bg-muted/50">
+                      <div className="flex items-center gap-3 w-full">
+                        <Plus className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <span className="font-medium text-sm text-foreground">
+                            Add Custom Endpoint
+                          </span>
+                          <p className="text-xs text-muted-foreground">
+                            Configure your own API
+                          </p>
+                        </div>
+                      </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {/* Recording Indicator */}
+                {isRecording && (
+                  <div className=" left-0 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-1 animate-in fade-in slide-in-from-bottom-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                      <span className="text-xs/4 text-red-600">
+                        Recording...
+                      </span>
+                    </div>
+                  </div>
+                )}</div>
 
               <div className="flex items-center gap-2">
                 {modes.map((mode) => {
@@ -365,11 +377,10 @@ export function ChatInput({
                       key={mode.id}
                       variant={selectedMode === mode.id ? "default" : "ghost"}
                       size="sm"
-                      className={`h-8 px-3 ${
-                        selectedMode === mode.id
-                          ? "bg-primary/10 text-primary hover:text-primary hover:bg-primary/10"
-                          : "hover:bg-muted/50"
-                      }`}
+                      className={`h-8 px-3 ${selectedMode === mode.id
+                        ? "bg-primary/10 text-primary hover:text-primary hover:bg-primary/10"
+                        : "hover:bg-muted/50"
+                        }`}
                       onClick={() => {
                         setSelectedMode(mode.id);
                         if (onModeChange) {
@@ -424,11 +435,10 @@ export function ChatInput({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className={`h-8 w-8 transition-all duration-200 ${
-                            isRecording
-                              ? "bg-red-500/10 text-red-500 hover:bg-red-500/20"
-                              : "hover:bg-muted/50"
-                          }`}
+                          className={`h-8 w-8 transition-all duration-200 ${isRecording
+                            ? "bg-red-500/10 text-red-500 hover:bg-red-500/20"
+                            : "hover:bg-muted/50"
+                            }`}
                           onClick={handleVoiceToggle}
                         >
                           {isRecording ? (
@@ -443,19 +453,6 @@ export function ChatInput({
                       </TooltipContent>
                     </Tooltip>
                   </div>
-
-                  {/* Recording Indicator */}
-                  {isRecording && (
-                    <div className="absolute -top-12 left-0 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 animate-in fade-in slide-in-from-bottom-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                        <span className="text-xs text-red-600 font-medium">
-                          Recording...
-                        </span>
-                        <Volume2 className="h-3 w-3 text-red-500" />
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 {/* Send Button */}
