@@ -269,7 +269,7 @@ export function WaveSurferRecorder({
                       className="h-9 w-9 p-0 hover:bg-red-500/10 hover:text-red-500"
                       onClick={() => setIsRecording(false)}
                     >
-                      <MicOff className="h-4 w-4" />
+                      <Save className="h-4 w-4" />
                     </Button>
                   </>
                 ) : recordedUrl ? (

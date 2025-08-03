@@ -54,7 +54,6 @@ export function ChatArea({ messages, setMessages }: ChatAreaProps) {
     const [currentGreeting, setCurrentGreeting] = useState(0);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [currentMode, setCurrentMode] = useState('vibecheck-pro');
-    const { openRouterApiKey, defaultModel } = useApiKeysStore();
 
     const greetings = [
         "What's on your mind today?",
@@ -193,7 +192,7 @@ export function ChatArea({ messages, setMessages }: ChatAreaProps) {
                                             <Button
                                                 key={index}
                                                 variant="outline"
-                                                className="group h-auto p-4 text-left hover:bg-gradient-to-r hover:from-primary/5 hover:to-accent/5 hover:border-primary/30 transition-all duration-300 hover:scale-105"
+                                                className="group h-auto p-4 text-left hover:bg-gradient-to-r hover:from-primary/5 hover:to-accent/5 hover:border-primary/30 transition-all duration-300 hover:scale-[98%]"
                                                 onClick={() => handleSuggestionClick(suggestion)}
                                             >
                                                 <div className="flex items-center gap-3 w-full">

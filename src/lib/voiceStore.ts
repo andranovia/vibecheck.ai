@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-type VisualizerType = 'react-voice-visualizer' | 'wavesurfer';
+type VisualizerType = 'wavesurfer';
 
 interface VoiceStoreState {
   // Visualizer settings
@@ -37,7 +37,7 @@ export const useVoiceStore = create<VoiceStoreState>()(
   persist(
     (set) => ({
       // Default settings
-      visualizerType: 'react-voice-visualizer',
+      visualizerType: 'wavesurfer',
       setVisualizerType: (type) => set({ visualizerType: type }),
       
       autoTranscribe: false,

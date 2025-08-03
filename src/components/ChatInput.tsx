@@ -32,7 +32,6 @@ import {
   RouteOff,
   Rabbit,
   Plus,
-  Waves,
   X,
   Check,
   Loader2
@@ -60,12 +59,9 @@ interface AIModel {
   isCustom?: boolean;
 }
 
-import { VoiceRecorder } from "./VoiceRecorder";
 import { WaveSurferRecorder } from "./WaveSurferRecorder";
-import { VoiceSettingsModal } from "./VoiceSettingsModal";
 import { useVoiceStore } from "@/lib/voiceStore";
 import { transcriptionService, TranscriptionResult } from "@/lib/transcriptionService";
-import { ErrorBoundary } from "next/dist/client/components/error-boundary";
 
 export function ChatInput({
   input,
@@ -79,7 +75,6 @@ export function ChatInput({
 }: ChatInputProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [selectedMode, setSelectedMode] = useState("vibecheck-pro");
-  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
   const [showRecorder, setShowRecorder] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
@@ -88,7 +83,7 @@ export function ChatInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { defaultModel, customProxies, setDefaultModel } = useApiKeysStore();
   const [selectedModel, setSelectedModel] = useState(defaultModel);
-  const { visualizerType, autoTranscribe, primaryColor, secondaryColor, transcriptionLanguage, enableProfanityFilter } = useVoiceStore();
+  const { autoTranscribe, transcriptionLanguage, enableProfanityFilter } = useVoiceStore();
 
   // Update selected model when default changes
   useEffect(() => {
@@ -191,40 +186,40 @@ export function ChatInput({
       setRecordedAudioUrl(null);
     }
   };
-  
+
   const handleRecordingComplete = async (blob: Blob) => {
     setIsRecording(false);
-    
+
     // Make sure we have a valid blob with actual audio data
     if (!blob || blob.size === 0) {
       console.error("Empty audio blob received");
       setTranscriptionText("No audio data recorded. Please try again.");
       return;
     }
-    
+
     // Create URL for audio playback
     const audioUrl = URL.createObjectURL(blob);
     setRecordedAudioUrl(audioUrl);
-    
+
     // Automatically transcribe if enabled in settings
     if (autoTranscribe) {
       await transcribeAudio(blob);
     }
   };
-  
+
   const transcribeAudio = async (blob: Blob): Promise<void> => {
     try {
       setIsTranscribing(true);
-      
+
       // Use our improved transcription service
       const result = await transcriptionService.transcribe(blob, {
         language: transcriptionLanguage,
         enableProfanityFilter,
       });
-      
+
       setTranscriptionResult(result);
       setTranscriptionText(result.text);
-      
+
       // If confidence is very low, show a warning
       if (result.confidence < 0.4) {
         console.warn("Low confidence transcription result:", result);
@@ -236,13 +231,13 @@ export function ChatInput({
       setIsTranscribing(false);
     }
   };
-  
+
   const handleAcceptTranscription = () => {
     if (transcriptionText) {
       // Add the transcribed text to the input field
       // If the input already has text, add a space before the transcription
       setInput(input.trim() ? `${input.trim()} ${transcriptionText}` : transcriptionText);
-      
+
       // Clear the recording state
       if (recordedAudioUrl) {
         URL.revokeObjectURL(recordedAudioUrl);
@@ -250,7 +245,7 @@ export function ChatInput({
     }
     handleRecordingCancel();
   };
-  
+
   const handleRecordingCancel = () => {
     setIsRecording(false);
     setShowRecorder(false);
@@ -527,21 +522,11 @@ export function ChatInput({
                   {/* Voice Input Button */}
                   <div className="absolute right-3 bottom-3 flex gap-1">
                     <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 hover:bg-muted/50 transition-colors"
-                          onClick={() => setShowVoiceSettings(true)}
-                        >
-                          <Waves className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
                       <TooltipContent>
                         <p>Voice settings</p>
                       </TooltipContent>
                     </Tooltip>
-                    
+
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -623,23 +608,6 @@ export function ChatInput({
                         variant="ghost"
                         size="sm"
                         className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                        onClick={() => setShowVoiceSettings(true)}
-                      >
-                        <Waves className="h-3 w-3 mr-1" />
-                        Voice Settings
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Configure voice recording settings</p>
-                    </TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
                         onClick={onOpenSettings}
                       >
                         <Settings className="h-3 w-3 mr-1" />
@@ -669,7 +637,7 @@ export function ChatInput({
               const currentText = input.trim();
               const prefix = currentText ? `${currentText} ` : '';
               setInput(`${prefix}[Attached: ${file.name}]`);
-              
+
               // Clear the file input for future uploads
               if (fileInputRef.current) {
                 fileInputRef.current.value = '';
@@ -677,13 +645,7 @@ export function ChatInput({
             }
           }}
         />
-        
-        {/* Voice Settings Modal */}
-        <VoiceSettingsModal 
-          open={showVoiceSettings}
-          onOpenChange={setShowVoiceSettings}
-        />
-        
+
         {/* Voice Recorder Modal */}
         {showRecorder && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -703,9 +665,9 @@ export function ChatInput({
                       {isRecording ? "Recording..." : recordedAudioUrl ? "Recording Complete" : "Voice Input"}
                     </h3>
                     <p className="text-xs text-muted-foreground">
-                      {isRecording ? "Speak clearly into your microphone" : 
-                       recordedAudioUrl ? "Review and transcribe your recording" : 
-                       "Click the microphone to start recording"}
+                      {isRecording ? "Speak clearly into your microphone" :
+                        recordedAudioUrl ? "Review and transcribe your recording" :
+                          "Click the microphone to start recording"}
                     </p>
                   </div>
                 </div>
@@ -721,21 +683,12 @@ export function ChatInput({
 
               {/* Voice Recorder Component */}
               <div className="p-4">
-                {visualizerType === 'react-voice-visualizer' ? (
-                  <VoiceRecorder
-                    isRecording={isRecording}
-                    setIsRecording={setIsRecording}
-                    onRecordingComplete={handleRecordingComplete}
-                    onCancel={handleRecordingCancel}
-                  />
-                ) : (
-                  <WaveSurferRecorder
-                    isRecording={isRecording}
-                    setIsRecording={setIsRecording}
-                    onRecordingComplete={handleRecordingComplete}
-                    onCancel={handleRecordingCancel}
-                  />
-                )}
+                <WaveSurferRecorder
+                  isRecording={isRecording}
+                  setIsRecording={setIsRecording}
+                  onRecordingComplete={handleRecordingComplete}
+                  onCancel={handleRecordingCancel}
+                />
               </div>
 
               {/* Transcription Section */}
@@ -759,18 +712,17 @@ export function ChatInput({
                               <span className="text-xs text-muted-foreground">
                                 {Math.round(transcriptionResult.confidence * 100)}% confidence
                               </span>
-                              <div 
-                                className={`w-2 h-2 rounded-full ${
-                                  transcriptionResult.confidence > 0.9 ? 'bg-green-500' :
-                                  transcriptionResult.confidence > 0.7 ? 'bg-yellow-500' : 'bg-red-500'
-                                }`}
+                              <div
+                                className={`w-2 h-2 rounded-full ${transcriptionResult.confidence > 0.9 ? 'bg-green-500' :
+                                    transcriptionResult.confidence > 0.7 ? 'bg-yellow-500' : 'bg-red-500'
+                                  }`}
                               />
                             </div>
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground leading-relaxed">{transcriptionText}</p>
                       </div>
-                      
+
                       <div className="flex gap-2">
                         <Button
                           onClick={handleAcceptTranscription}
@@ -805,7 +757,7 @@ export function ChatInput({
                           </audio>
                         )}
                       </div>
-                      
+
                       <div className="flex gap-2">
                         <Button
                           onClick={async () => {
