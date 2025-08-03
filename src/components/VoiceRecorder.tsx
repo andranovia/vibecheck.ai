@@ -62,8 +62,27 @@ export function VoiceRecorder({
   useEffect(() => {
     if (error) {
       console.error("Recording error:", error);
-      // Present a more user-friendly error
-      alert(`Unable to access microphone: ${error.message || "Please check your microphone permissions"}`);
+      
+      // Create a user-friendly error message
+      const errorMessage = error.name === 'NotAllowedError' 
+        ? 'Microphone access denied. Please enable microphone permissions in your browser settings.'
+        : error.name === 'NotFoundError'
+        ? 'No microphone found. Please connect a microphone and try again.'
+        : `Unable to access microphone: ${error.message || "Please check your microphone permissions"}`;
+      
+      // Show error message in a non-blocking way
+      const errorDiv = document.createElement('div');
+      errorDiv.style.cssText = 'position:fixed;top:20px;right:20px;background:rgba(220,38,38,0.9);color:white;padding:12px 16px;border-radius:8px;z-index:10000;box-shadow:0 4px 6px rgba(0,0,0,0.1);';
+      errorDiv.innerHTML = errorMessage;
+      document.body.appendChild(errorDiv);
+      
+      // Remove after 5 seconds
+      setTimeout(() => {
+        errorDiv.style.opacity = '0';
+        errorDiv.style.transition = 'opacity 0.5s ease';
+        setTimeout(() => document.body.removeChild(errorDiv), 500);
+      }, 5000);
+      
       setIsRecording(false);
       onCancel();
     }
@@ -114,7 +133,47 @@ export function VoiceRecorder({
     if (isRecording && !showVisualizer) {
       setShowVisualizer(true);
     }
+    
+    // Update canvas animation frame rate when recording
+    if (isRecording) {
+      const visualizerElement = document.querySelector('.voice-visualizer canvas');
+      if (visualizerElement instanceof HTMLCanvasElement) {
+        // Force higher frame rate update for smoother visualization
+        visualizerElement.style.animation = 'pulse 0.5s infinite';
+      }
+    }
   }, [isRecording, showVisualizer]);
+  
+  // Add dynamic styling for smoother animations
+  useEffect(() => {
+    // Add keyframes for animation if not already added
+    if (!document.querySelector('#voice-recorder-styles')) {
+      const styleTag = document.createElement('style');
+      styleTag.id = 'voice-recorder-styles';
+      styleTag.textContent = `
+        @keyframes pulse {
+          0% { opacity: 0.95; }
+          50% { opacity: 1; }
+          100% { opacity: 0.95; }
+        }
+        .voice-visualizer canvas {
+          transition: all 0.2s ease;
+        }
+        .recording-indicator {
+          animation: pulse 1.2s infinite;
+        }
+      `;
+      document.head.appendChild(styleTag);
+    }
+    
+    return () => {
+      // Clean up on unmount
+      const styleTag = document.querySelector('#voice-recorder-styles');
+      if (styleTag) {
+        document.head.removeChild(styleTag);
+      }
+    };
+  }, []);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -129,25 +188,27 @@ export function VoiceRecorder({
       {(showVisualizer || isRecording || recordedBlob) ? (
         <div className="flex flex-col gap-3">
           <div className="visualizer-container p-4 bg-muted/30 rounded-lg border border-border/50">
-            <VoiceVisualizer
-              controls={recorderControls}
-              height={80}
-              width="100%"
-              backgroundColor="transparent"
-              mainBarColor="#7c3aed" // Purple color for primary bars
-              secondaryBarColor="#a78bfa" // Lighter purple for secondary bars
-              barWidth={2}
-              gap={1}
-              rounded={5}
-              isControlPanelShown={false}
-              isDefaultUIShown={false}
-              animateCurrentPick={true}
-            />
+            <div className="voice-visualizer">
+              <VoiceVisualizer
+                controls={recorderControls}
+                height={80}
+                width="100%"
+                backgroundColor="transparent"
+                mainBarColor="#7c3aed" // Purple color for primary bars
+                secondaryBarColor="#a78bfa" // Lighter purple for secondary bars
+                barWidth={2}
+                gap={1}
+                rounded={5}
+                isControlPanelShown={false}
+                isDefaultUIShown={false}
+                animateCurrentPick={true}
+              />
+            </div>
             <div className="flex justify-between items-center mt-3">
               <div className="recording-time text-sm font-mono">
                 {isRecording ? (
                   <span className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse recording-indicator"></span>
                     <span className="text-red-500 font-medium">{formatTime(recordingDuration)}</span>
                   </span>
                 ) : recordedBlob ? (

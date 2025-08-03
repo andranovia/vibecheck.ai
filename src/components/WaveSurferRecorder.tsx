@@ -32,7 +32,7 @@ export function WaveSurferRecorder({
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Create WaveSurfer instance
+    // Create WaveSurfer instance with customized visualization
     const wavesurfer = WaveSurfer.create({
       container: containerRef.current,
       waveColor: '#a78bfa', // Light purple
@@ -43,6 +43,9 @@ export function WaveSurferRecorder({
       barGap: 1,
       barRadius: 3,
       normalize: true,
+      minPxPerSec: 50,
+      fillParent: true,
+      interact: true,
     });
 
     // Initialize record plugin
@@ -101,7 +104,12 @@ export function WaveSurferRecorder({
       }
 
       // Start recording with the first available device
-      await record.startRecording({ deviceId: devices[0].deviceId });
+      await record.startRecording({
+        deviceId: devices[0].deviceId,
+        // Set audio parameters for better quality
+        sampleRate: 44100,
+        mimeType: 'audio/webm',
+      });
       setShowVisualizer(true);
       setRecordingTime(0);
       setIsPaused(false);
@@ -197,12 +205,23 @@ export function WaveSurferRecorder({
       try {
         // Make sure the audio is loaded before playing
         if (recordedUrl && wavesurferRef.current.getDuration() === 0) {
+          // Load the audio and then play
           wavesurferRef.current.load(recordedUrl);
-          setTimeout(() => {
+          
+          // Add an event listener to play once loaded
+          const onReady = () => {
             wavesurferRef.current?.play();
-          }, 100);
+            wavesurferRef.current?.un('ready', onReady); // Remove event listener
+          };
+          
+          wavesurferRef.current.on('ready', onReady);
         } else {
-          wavesurferRef.current.playPause();
+          // Just toggle play/pause if already loaded
+          if (wavesurferRef.current.isPlaying()) {
+            wavesurferRef.current.pause();
+          } else {
+            wavesurferRef.current.play();
+          }
         }
       } catch (error) {
         console.error("Error playing/pausing audio:", error);

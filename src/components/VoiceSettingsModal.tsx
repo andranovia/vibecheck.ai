@@ -35,8 +35,12 @@ export function VoiceSettingsModal({
     maxRecordingDuration,
     setMaxRecordingDuration,
     showWaveformDuringRecording,
+    transcriptionLanguage,
+    setTranscriptionLanguage,
     setShowWaveformDuringRecording,
     primaryColor,
+    enableProfanityFilter,
+    setEnableProfanityFilter,
     secondaryColor,
     setPrimaryColor,
     setSecondaryColor,
@@ -115,6 +119,36 @@ export function VoiceSettingsModal({
                   id="auto-transcribe"
                   checked={autoTranscribe}
                   onCheckedChange={setAutoTranscribe}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="transcription-language">Transcription Language</Label>
+                <select 
+                  id="transcription-language"
+                  className="w-full p-2 border rounded-md"
+                  value={transcriptionLanguage}
+                  onChange={(e) => setTranscriptionLanguage(e.target.value)}
+                >
+                  <option value="en-US">English (US)</option>
+                  <option value="en-GB">English (UK)</option>
+                  <option value="es-ES">Spanish</option>
+                  <option value="fr-FR">French</option>
+                  <option value="de-DE">German</option>
+                  <option value="it-IT">Italian</option>
+                  <option value="ja-JP">Japanese</option>
+                  <option value="ko-KR">Korean</option>
+                  <option value="zh-CN">Chinese (Simplified)</option>
+                  <option value="ru-RU">Russian</option>
+                </select>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <Label htmlFor="profanity-filter">Enable profanity filter</Label>
+                <Switch
+                  id="profanity-filter"
+                  checked={enableProfanityFilter}
+                  onCheckedChange={setEnableProfanityFilter}
                 />
               </div>
 

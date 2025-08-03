@@ -195,66 +195,45 @@ export function ChatInput({
   const handleRecordingComplete = async (blob: Blob) => {
     setIsRecording(false);
     
+    // Make sure we have a valid blob with actual audio data
+    if (!blob || blob.size === 0) {
+      console.error("Empty audio blob received");
+      setTranscriptionText("No audio data recorded. Please try again.");
+      return;
+    }
+    
     // Create URL for audio playback
     const audioUrl = URL.createObjectURL(blob);
     setRecordedAudioUrl(audioUrl);
     
+    // Automatically transcribe if enabled in settings
     if (autoTranscribe) {
-      setIsTranscribing(true);
-      try {
-        // Use real transcription service with actual blob
-        const result = await transcriptionService.transcribe(blob, {
-          language: transcriptionLanguage,
-          enableProfanityFilter,
-        });
-        setTranscriptionResult(result);
-        setTranscriptionText(result.text);
-      } catch (error) {
-        console.error("Transcription failed:", error);
-        setTranscriptionText("Transcription failed. Please try again.");
-      } finally {
-        setIsTranscribing(false);
-      }
+      await transcribeAudio(blob);
     }
   };
   
-  const simulateTranscription = async (blob: Blob): Promise<void> => {
-    if (!blob || blob.size === 0) {
-      // If no blob is provided or attempting to transcribe an empty blob
-      if (recordedAudioUrl) {
-        try {
-          // Fetch the blob from the URL
-          const response = await fetch(recordedAudioUrl);
-          const audioBlob = await response.blob();
-          
-          const result = await transcriptionService.transcribe(audioBlob, {
-            language: transcriptionLanguage,
-            enableProfanityFilter,
-          });
-          
-          setTranscriptionResult(result);
-          setTranscriptionText(result.text);
-        } catch (error) {
-          console.error("Transcription failed:", error);
-          setTranscriptionText("Transcription failed. Please try again.");
-        }
-      } else {
-        setTranscriptionText("No audio recording found to transcribe.");
+  const transcribeAudio = async (blob: Blob): Promise<void> => {
+    try {
+      setIsTranscribing(true);
+      
+      // Use our improved transcription service
+      const result = await transcriptionService.transcribe(blob, {
+        language: transcriptionLanguage,
+        enableProfanityFilter,
+      });
+      
+      setTranscriptionResult(result);
+      setTranscriptionText(result.text);
+      
+      // If confidence is very low, show a warning
+      if (result.confidence < 0.4) {
+        console.warn("Low confidence transcription result:", result);
       }
-    } else {
-      // Transcribe the provided blob directly
-      try {
-        const result = await transcriptionService.transcribe(blob, {
-          language: transcriptionLanguage,
-          enableProfanityFilter,
-        });
-        
-        setTranscriptionResult(result);
-        setTranscriptionText(result.text);
-      } catch (error) {
-        console.error("Transcription failed:", error);
-        setTranscriptionText("Transcription failed. Please try again.");
-      }
+    } catch (error) {
+      console.error("Transcription failed:", error);
+      setTranscriptionText("Transcription failed. Please try again or check microphone permissions.");
+    } finally {
+      setIsTranscribing(false);
     }
   };
   
@@ -687,10 +666,9 @@ export function ChatInput({
             const file = e.target.files?.[0];
             if (file) {
               // Add file name to input
-              setInput((current) => {
-                const prefix = current.trim() ? `${current.trim()} ` : '';
-                return `${prefix}[Attached: ${file.name}]`;
-              });
+              const currentText = input.trim();
+              const prefix = currentText ? `${currentText} ` : '';
+              setInput(`${prefix}[Attached: ${file.name}]`);
               
               // Clear the file input for future uploads
               if (fileInputRef.current) {
@@ -832,16 +810,13 @@ export function ChatInput({
                         <Button
                           onClick={async () => {
                             if (recordedAudioUrl) {
-                              setIsTranscribing(true);
                               try {
                                 const response = await fetch(recordedAudioUrl);
                                 const blob = await response.blob();
-                                await simulateTranscription(blob);
+                                await transcribeAudio(blob);
                               } catch (error) {
                                 console.error("Error transcribing:", error);
                                 setTranscriptionText("Error transcribing audio. Please try again.");
-                              } finally {
-                                setIsTranscribing(false);
                               }
                             }
                           }}
