@@ -8,7 +8,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { ChatInput } from "./ChatInput";
 import { SettingsModal } from "./SettingsModal";
-import { useApiKeysStore } from "@/lib/store";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";

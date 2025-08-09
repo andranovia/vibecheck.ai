@@ -12,10 +12,8 @@ import {
   Save,
   X,
   Info,
-  AlertCircle,
   CheckCircle2,
   Trash2,
-  Edit,
 } from 'lucide-react';
 
 interface SettingsModalProps {
@@ -30,8 +28,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     customProxies,
     addCustomProxy,
     removeCustomProxy,
-    defaultModel,
-    setDefaultModel 
   } = useApiKeysStore();
 
   const [apiKey, setApiKey] = useState(openRouterApiKey || '');

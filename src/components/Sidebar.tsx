@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Plus,
-  Sparkles
 } from "lucide-react";
 import Image from "next/image";
 import {

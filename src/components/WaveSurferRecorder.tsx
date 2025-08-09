@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import WaveSurfer from "wavesurfer.js";
 import RecordPlugin from "wavesurfer.js/dist/plugins/record.esm.js";
 import { Button } from "@/components/ui/button";
-import { Mic, MicOff, Play, Pause, Save, Trash2 } from "lucide-react";
+import { Mic, Play, Pause, Save, Trash2 } from "lucide-react";
 
 interface WaveSurferRecorderProps {
   onRecordingComplete: (blob: Blob) => void;
