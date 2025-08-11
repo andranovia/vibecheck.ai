@@ -34,8 +34,11 @@ export const authOptions: NextAuthOptions = {
       authorize: async (credentials, req) => {
         if (!credentials?.email || !credentials?.password) return null;
 
+        // Normalize email to lowercase to match registration/DB storage
+        const email = credentials.email.toLowerCase();
+
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+          where: { email },
         });
 
         if (!user?.passwordHash) {
@@ -49,7 +52,7 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const valid = await bcrypt.compare(credentials.password, user.passwordHash);
+  const valid = await bcrypt.compare(credentials.password, user.passwordHash);
         if (!valid) return null;
 
         // Return the full user object, including 'role'

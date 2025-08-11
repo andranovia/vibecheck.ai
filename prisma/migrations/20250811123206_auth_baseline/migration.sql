@@ -1,30 +1,19 @@
-/*
-  Warnings:
-
-  - You are about to drop the column `createdAt` on the `Session` table. All the data in the column will be lost.
-  - You are about to drop the column `expiresAt` on the `Session` table. All the data in the column will be lost.
-  - You are about to drop the column `password` on the `User` table. All the data in the column will be lost.
-  - Added the required column `expires` to the `Session` table without a default value. This is not possible if the table is not empty.
-
-*/
 -- CreateEnum
 CREATE TYPE "public"."Role" AS ENUM ('PREMIUM', 'USER');
 
--- DropForeignKey
-ALTER TABLE "public"."Session" DROP CONSTRAINT "Session_userId_fkey";
+-- CreateTable
+CREATE TABLE "public"."User" (
+    "id" TEXT NOT NULL,
+    "name" TEXT,
+    "email" TEXT,
+    "emailVerified" TIMESTAMP(3),
+    "image" TEXT,
+    "role" "public"."Role" NOT NULL DEFAULT 'USER',
+    "passwordHash" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
--- AlterTable
-ALTER TABLE "public"."Session" DROP COLUMN "createdAt",
-DROP COLUMN "expiresAt",
-ADD COLUMN     "expires" TIMESTAMP(3) NOT NULL;
-
--- AlterTable
-ALTER TABLE "public"."User" DROP COLUMN "password",
-ADD COLUMN     "image" TEXT,
-ADD COLUMN     "passwordHash" TEXT,
-ADD COLUMN     "role" "public"."Role" NOT NULL DEFAULT 'USER',
-ALTER COLUMN "name" DROP NOT NULL,
-ALTER COLUMN "email" DROP NOT NULL;
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "public"."Account" (
@@ -42,6 +31,16 @@ CREATE TABLE "public"."Account" (
     "session_state" TEXT,
 
     CONSTRAINT "Account_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."Session" (
+    "id" TEXT NOT NULL,
+    "sessionToken" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "expires" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Session_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -64,10 +63,19 @@ CREATE TABLE "public"."PasswordResetToken" (
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "User_email_key" ON "public"."User"("email");
+
+-- CreateIndex
 CREATE INDEX "Account_userId_idx" ON "public"."Account"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Account_provider_providerAccountId_key" ON "public"."Account"("provider", "providerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Session_sessionToken_key" ON "public"."Session"("sessionToken");
+
+-- CreateIndex
+CREATE INDEX "Session_userId_idx" ON "public"."Session"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "VerificationToken_token_key" ON "public"."VerificationToken"("token");
@@ -80,9 +88,6 @@ CREATE UNIQUE INDEX "PasswordResetToken_token_key" ON "public"."PasswordResetTok
 
 -- CreateIndex
 CREATE INDEX "PasswordResetToken_identifier_idx" ON "public"."PasswordResetToken"("identifier");
-
--- CreateIndex
-CREATE INDEX "Session_userId_idx" ON "public"."Session"("userId");
 
 -- AddForeignKey
 ALTER TABLE "public"."Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
