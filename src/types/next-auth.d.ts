@@ -1,7 +1,7 @@
 import "next-auth";
 import "next-auth/jwt";
 
-type UserRole = "PREMIUM" | "USER";
+type UserRole = "ADMIN" | "PREMIUM" | "USER";
 
 declare module "next-auth" {
   interface Session {
