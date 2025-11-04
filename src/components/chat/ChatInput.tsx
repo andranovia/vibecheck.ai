@@ -34,7 +34,8 @@ import {
   Plus,
   X,
   Check,
-  Loader2
+  Loader2,
+  MessageCircle
 } from "lucide-react";
 
 interface ChatInputProps {
@@ -44,7 +45,6 @@ interface ChatInputProps {
   isLoading: boolean;
   messagesLength: number;
   onOpenSettings?: () => void;
-  onModeChange?: (mode: string) => void;
   onModelChange?: (model: string) => void;
 }
 
@@ -59,7 +59,7 @@ interface AIModel {
   isCustom?: boolean;
 }
 
-import { WaveSurferRecorder } from "./WaveSurferRecorder";
+import { WaveSurferRecorder } from "./ui/WaveSurferRecorder";
 import { useVoiceStore } from "@/lib/voiceStore";
 import { transcriptionService, TranscriptionResult } from "@/lib/transcriptionService";
 
@@ -70,11 +70,10 @@ export function ChatInput({
   isLoading,
   messagesLength,
   onOpenSettings,
-  onModeChange,
   onModelChange,
 }: ChatInputProps) {
   const [isRecording, setIsRecording] = useState(false);
-  const [selectedMode, setSelectedMode] = useState("vibecheck-pro");
+  const [selectedMode, setSelectedMode] = useState("chat");
   const [showRecorder, setShowRecorder] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
@@ -85,12 +84,10 @@ export function ChatInput({
   const [selectedModel, setSelectedModel] = useState(defaultModel);
   const { autoTranscribe, transcriptionLanguage, enableProfanityFilter } = useVoiceStore();
 
-  // Update selected model when default changes
   useEffect(() => {
     setSelectedModel(defaultModel);
   }, [defaultModel]);
 
-  // When user changes model, update the default
   const handleModelChange = (modelId: string) => {
     setSelectedModel(modelId);
     setDefaultModel(modelId);
@@ -101,15 +98,15 @@ export function ChatInput({
 
   const modes = [
     {
-      id: "vibecheck-pro",
-      name: "VibeCheck Pro",
-      icon: Zap,
+      id: "chat",
+      name: "Chat Mode",
+      icon: MessageCircle,
       color: "text-primary",
     },
     {
-      id: "creative-companion",
-      name: "Creative Companion",
-      icon: Sparkles,
+      id: "voice",
+      name: "Voice Mode",
+      icon: Mic,
       color: "text-pink-500",
     },
   ];
@@ -474,13 +471,10 @@ export function ChatInput({
                         }`}
                       onClick={() => {
                         setSelectedMode(mode.id);
-                        if (onModeChange) {
-                          onModeChange(mode.id);
-                        }
                       }}
                     >
                       <Icon className="h-3 w-3 mr-1" />
-                      <span className="text-xs">{mode.name.split(" ")[0]}</span>
+                      <span className="text-xs">{mode.name}</span>
                     </Button>
                   );
                 })}

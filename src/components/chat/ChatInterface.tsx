@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Header } from "./Header";
-import { Sidebar } from "./Sidebar";
+import { Header } from "../layout/ui/Header";
+// import { Sidebar } from "./Sidebar";
 import { ChatArea } from "./ChatArea";
 
 export default function ChatInterface() {
@@ -25,11 +25,11 @@ export default function ChatInterface() {
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       {/* Sidebar */}
-      <div className={`transition-all duration-300 ease-in-out ${
+      {/* <div className={`transition-all duration-300 ease-in-out ${
         sidebarOpen ? 'w-80' : 'w-0'
       } overflow-hidden border-r border-border`}>
         <Sidebar isOpen={sidebarOpen} />
-      </div>
+      </div> */}
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">

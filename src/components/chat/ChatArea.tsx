@@ -4,7 +4,7 @@ import { useState, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { ChatInput } from "./ChatInput";
-import { SettingsModal } from "./SettingsModal";
+import { SettingsModal } from "../modal/SettingsModal";
 import {
     Zap,
     Coffee,
@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 
-const MetaCloud = dynamic(() => import("@/components/MetaCloud"), { ssr: false });
+const MetaCloud = dynamic(() => import("@/components/chat/ui/MetaCloud"), { ssr: false });
 interface Message {
     id: string;
     type: 'user' | 'assistant';
@@ -39,7 +39,6 @@ export function ChatArea({ messages, setMessages }: ChatAreaProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(true);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const [currentMode, setCurrentMode] = useState('vibecheck-pro');
 
 
     const suggestions = [
@@ -97,7 +96,6 @@ export function ChatArea({ messages, setMessages }: ChatAreaProps) {
                     model: selectedModel,
                     temperature: 0.7,
                     maxTokens: 1000,
-                    mode: currentMode, // Use current selected mode
                 }
             );
 
@@ -187,8 +185,7 @@ export function ChatArea({ messages, setMessages }: ChatAreaProps) {
                 isLoading={isLoading}
                 messagesLength={messages.length}
                 onOpenSettings={() => setIsSettingsOpen(true)}
-                onModeChange={setCurrentMode}
-                onModelChange={() => { }} // We're already watching defaultModel from the store
+                onModelChange={() => { }}
             />
 
             {/* Settings Modal */}
