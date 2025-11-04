@@ -61,7 +61,7 @@ export function WaveSurferRecorder({
       const url = URL.createObjectURL(blob);
       setRecordedUrl(url);
       wavesurfer.load(url);
-      
+
       // Stop the timer
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -118,7 +118,7 @@ export function WaveSurferRecorder({
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
-      
+
       timerRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1);
       }, 1000);
@@ -136,7 +136,7 @@ export function WaveSurferRecorder({
     if (record.isRecording()) {
       record.pauseRecording();
       setIsPaused(true);
-      
+
       // Pause the timer
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -144,7 +144,7 @@ export function WaveSurferRecorder({
     } else if (record.isPaused()) {
       record.resumeRecording();
       setIsPaused(false);
-      
+
       // Resume the timer
       timerRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1);
@@ -178,12 +178,12 @@ export function WaveSurferRecorder({
     setRecordingTime(0);
     setIsPaused(false);
     setRecordedUrl(null);
-    
+
     // Clear the timer
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
-    
+
     // Reset wavesurfer
     if (wavesurferRef.current) {
       wavesurferRef.current.empty();
@@ -207,13 +207,13 @@ export function WaveSurferRecorder({
         if (recordedUrl && wavesurferRef.current.getDuration() === 0) {
           // Load the audio and then play
           wavesurferRef.current.load(recordedUrl);
-          
+
           // Add an event listener to play once loaded
           const onReady = () => {
             wavesurferRef.current?.play();
             wavesurferRef.current?.un('ready', onReady); // Remove event listener
           };
-          
+
           wavesurferRef.current.on('ready', onReady);
         } else {
           // Just toggle play/pause if already loaded
@@ -231,7 +231,7 @@ export function WaveSurferRecorder({
 
   return (
     <div className="wavesurfer-recorder-container">
-      {(showVisualizer || isRecording || recordedUrl) ? (
+      {(showVisualizer) ? (
         <div className="flex flex-col gap-3">
           <div className="visualizer-container p-4 bg-muted/30 rounded-lg border border-border/50">
             <div ref={containerRef} className="w-full"></div>
@@ -305,7 +305,7 @@ export function WaveSurferRecorder({
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center p-8 text-center">
+        <div className="flex flex-col items-center justify-center text-center gap-0 mb-4">
           <div className="p-4 rounded-full bg-muted/30 mb-4">
             <Mic className="h-8 w-8 text-muted-foreground" />
           </div>
@@ -313,7 +313,7 @@ export function WaveSurferRecorder({
           <p className="text-xs text-muted-foreground mb-4">Click the microphone button to start recording your voice message</p>
           <Button
             onClick={() => setIsRecording(true)}
-            className="h-10 px-6"
+            className="h-10 px-6 mt-4"
           >
             <Mic className="h-4 w-4 mr-2" />
             Start Recording
