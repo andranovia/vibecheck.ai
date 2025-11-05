@@ -11,12 +11,8 @@ import {
 } from "@/components/ui/tooltip";
 import {
   Send,
-  Mic,
   Paperclip,
   Settings,
-  X,
-  Check,
-  Loader2,
 } from "lucide-react";
 
 interface ChatInputProps {
@@ -106,19 +102,6 @@ export function ChatInput({
     }
   };
 
-  const handleAcceptTranscription = () => {
-    if (transcriptionText) {
-      // Add the transcribed text to the input field
-      // If the input already has text, add a space before the transcription
-      setInput(input.trim() ? `${input.trim()} ${transcriptionText}` : transcriptionText);
-
-      // Clear the recording state
-      if (recordedAudioUrl) {
-        URL.revokeObjectURL(recordedAudioUrl);
-      }
-    }
-    handleRecordingCancel();
-  };
 
   const handleRecordingCancel = () => {
     setIsRecording(false);
@@ -183,31 +166,9 @@ export function ChatInput({
                   {showRecorder ? (
                     <div className="z-50 flex items-center justify-center">
                       <div className=" max-w-lg w-full mx-auto overflow-hidden">
-                        {/* Header */}
-                        {/* <div className="flex items-center justify-between p-4 border-b border-border/50">
-                          <div className="flex items-center gap-2">
-                            <div className={`p-2 rounded-lg ${isRecording ? 'bg-red-500/10' : 'bg-muted/50'}`}>
-                              {isRecording ? (
-                                <Mic className="h-4 w-4 text-red-500 animate-pulse" />
-                              ) : (
-                                <Mic className="h-4 w-4 text-muted-foreground" />
-                              )}
-                            </div>
-                            <div>
-                              <h3 className="font-semibold text-sm">
-                                {isRecording ? "Recording..." : recordedAudioUrl ? "Recording Complete" : "Voice Input"}
-                              </h3>
-                              <p className="text-xs text-muted-foreground">
-                                {isRecording ? "Speak clearly into your microphone" :
-                                  recordedAudioUrl ? "Review and transcribe your recording" :
-                                    "Click the microphone to start recording"}
-                              </p>
-                            </div>
-                          </div>
-                        </div> */}
 
                         {/* Voice Recorder Component */}
-                        <div>
+                        <div className="p-4">
                           <WaveSurferRecorder
                             isRecording={isRecording}
                             setIsRecording={setIsRecording}
@@ -254,7 +215,7 @@ export function ChatInput({
 
               {/* Bottom Actions Bar */}
               <div className={`flex items-center justify-between mt-4 pt-3  border-t border-border/30`}>
-                <div className="flex items-center gap-4">
+                <div className="px-2 flex items-center gap-4">
                   <p className="text-xs text-muted-foreground">
                     {!showRecorder ? "Press Enter to send • Shift+Enter for new line" : "Record and voice your vibe"}
                   </p>
@@ -267,7 +228,7 @@ export function ChatInput({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className={`h-7 px-2 text-xs text-muted-foreground hover:text-foreground transition-colors ${showRecorder ? 'mr-8' : ''}`}
+                        className={`h-7 px-2 text-xs text-muted-foreground hover:text-foreground transition-colors`}
                         onClick={onOpenSettings}
                       >
                         <Settings className="h-3 w-3 mr-1" />

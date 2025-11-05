@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { ChatInput } from "./ChatInput";
 import { SettingsModal } from "../modal/SettingsModal";
@@ -34,7 +33,6 @@ interface ChatAreaProps {
 }
 
 export function ChatArea({ messages, setMessages }: ChatAreaProps) {
-    const { data: session } = useSession();
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(true);
@@ -56,19 +54,7 @@ export function ChatArea({ messages, setMessages }: ChatAreaProps) {
 
     const handleSend = async () => {
         if (!input.trim() || isLoading) return;
-
-        // Require verified email before sending chat messages
-        const emailVerified = (session?.user as any)?.emailVerified;
-        if (session && !emailVerified) {
-            const notice: Message = {
-                id: Date.now().toString(),
-                type: 'assistant',
-                content: 'Please verify your email address to use the chatbot. Check your inbox for a verification link or request a new one from your account settings.',
-                timestamp: new Date(),
-            };
-            setMessages(prev => [...prev, notice]);
-            return;
-        }
+    
 
         const userMessage: Message = {
             id: Date.now().toString(),
