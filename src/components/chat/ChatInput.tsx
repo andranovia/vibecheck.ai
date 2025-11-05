@@ -253,10 +253,10 @@ export function ChatInput({
               </div>
 
               {/* Bottom Actions Bar */}
-              <div className={`flex items-center justify-between mt-4 pt-3  ${showRecorder ? 'absolute bottom-4 w-full' : 'border-t border-border/30'}`}>
+              <div className={`flex items-center justify-between mt-4 pt-3  border-t border-border/30`}>
                 <div className="flex items-center gap-4">
                   <p className="text-xs text-muted-foreground">
-                    {!showRecorder ? "Press Enter to send • Shift+Enter for new line" : ""}
+                    {!showRecorder ? "Press Enter to send • Shift+Enter for new line" : "Record and voice your vibe"}
                   </p>
                 </div>
 

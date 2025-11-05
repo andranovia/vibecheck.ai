@@ -305,19 +305,11 @@ export function WaveSurferRecorder({
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center text-center gap-0 mb-4">
-          <div className="p-4 rounded-full bg-muted/30 mb-4">
-            <Mic className="h-8 w-8 text-muted-foreground" />
+        <div className="flex flex-col items-center justify-center text-center gap-0">
+          <div className="p-4 rounded-full bg-primary/10 mb-4">
+            <Mic className="h-8 w-8  text-primary " />
           </div>
-          <h3 className="font-medium text-sm mb-2">Ready to Record</h3>
           <p className="text-xs text-muted-foreground mb-4">Click the microphone button to start recording your voice message</p>
-          <Button
-            onClick={() => setIsRecording(true)}
-            className="h-10 px-6 mt-4"
-          >
-            <Mic className="h-4 w-4 mr-2" />
-            Start Recording
-          </Button>
         </div>
       )}
     </div>

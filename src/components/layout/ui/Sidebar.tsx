@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -8,10 +7,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import {
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
 } from "@/components/ui/tooltip";
 
 interface SidebarProps {
@@ -26,16 +22,8 @@ interface Conversation {
   preview: string;
 }
 
-interface MoodTemplate {
-  id: string;
-  label: string;
-  emoji: string;
-  description: string;
-  color: string;
-}
 
 export function Sidebar({ isOpen }: SidebarProps) {
-  const [selectedMood, setSelectedMood] = useState<string | null>(null);
 
   const conversations: Conversation[] = [
     {
@@ -65,17 +53,16 @@ export function Sidebar({ isOpen }: SidebarProps) {
       mood: 'happy',
       timestamp: '3d ago',
       preview: 'Relaxing and enjoying the weekend with friends and family'
+    },
+        {
+      id: '5',
+      title: 'Weekend Vibes',
+      mood: 'happy',
+      timestamp: '3d ago',
+      preview: 'Relaxing and enjoying the weekend with friends and family'
     }
   ];
 
-  const moodTemplates: MoodTemplate[] = [
-    { id: 'happy', label: 'Happy', emoji: '😊', description: 'Feeling great', color: 'bg-green-500' },
-    { id: 'excited', label: 'Excited', emoji: '🎉', description: 'Full of energy', color: 'bg-orange-500' },
-    { id: 'calm', label: 'Calm', emoji: '😌', description: 'Peaceful mind', color: 'bg-blue-500' },
-    { id: 'sad', label: 'Down', emoji: '😔', description: 'Need support', color: 'bg-gray-500' },
-    { id: 'neutral', label: 'Neutral', emoji: '😐', description: 'Just okay', color: 'bg-yellow-500' },
-    { id: 'stressed', label: 'Stressed', emoji: '😤', description: 'Overwhelmed', color: 'bg-red-500' }
-  ];
 
   if (!isOpen) return null;
 
@@ -104,48 +91,8 @@ export function Sidebar({ isOpen }: SidebarProps) {
         </Button>
       </div>
 
-      {/* Quick Mood Selector */}
-      <div className="p-4 border-b border-border/30">
-        <h3 className="text-xs font-medium text-muted-foreground mb-3">Quick start</h3>
-        <div className="grid grid-cols-2 gap-2">
-          {moodTemplates.slice(0, 4).map((mood) => (
-            <Tooltip key={mood.id}>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => setSelectedMood(mood.id)}
-                  className={`group relative p-3 rounded-xl border transition-all duration-200 ${selectedMood === mood.id
-                      ? 'border-primary/60 bg-gradient-to-br from-primary/10 to-primary/5 shadow-sm'
-                      : 'border-border/40 hover:border-border/70 hover:bg-accent/30 hover:shadow-sm'
-                    }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className={`flex-shrink-0 w-8 h-8 rounded-lg ${mood.color}/20 flex items-center justify-center ${selectedMood === mood.id ? 'scale-110' : 'group-hover:scale-105'
-                      } transition-transform duration-200`}>
-                      <span className="text-lg">{mood.emoji}</span>
-                    </div>
-                    <div className="text-left min-w-0">
-                      <div className="text-xs font-semibold text-foreground">{mood.label}</div>
-                      <div className="text-xs text-muted-foreground/70 truncate">{mood.description}</div>
-                    </div>
-                  </div>
-                  {selectedMood === mood.id && (
-                    <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary animate-pulse" />
-                  )}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="bg-popover text-popover-foreground border shadow-md">
-                <div className="flex items-center gap-2">
-                  <span>{mood.emoji}</span>
-                  <span><span className="font-medium">{mood.label}:</span> {mood.description}</span>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          ))}
-        </div>
-      </div>
-
       {/* Recent Conversations */}
-      <div className="flex-1 p-4">
+      <div className="px-4 pt-4 h-fit">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xs font-medium text-muted-foreground">Recent conversations</h3>
           <div className="flex gap-1">
@@ -155,7 +102,7 @@ export function Sidebar({ isOpen }: SidebarProps) {
           </div>
         </div>
 
-        <ScrollArea className="h-[280px]">
+        <ScrollArea className="h-[calc(100vh-320px)]">
           <div className="space-y-2">
             {conversations.map((conversation, index) => (
                   <div
@@ -240,29 +187,6 @@ export function Sidebar({ isOpen }: SidebarProps) {
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">Calm & Focused</p>
                   <p className="text-xs text-muted-foreground/80">Perfect mindset for productivity</p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <div className="flex items-center gap-4">
-                  <div className="text-center">
-                    <div className="text-xs font-semibold text-primary">3</div>
-                    <div className="text-xs text-muted-foreground/70">sessions</div>
-                  </div>
-                  <div className="w-px h-8 bg-border/40" />
-                  <div className="text-center">
-                    <div className="text-xs font-semibold text-emerald-500">+2</div>
-                    <div className="text-xs text-muted-foreground/70">this week</div>
-                  </div>
-                </div>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map((day, i) => (
-                    <div
-                      key={day}
-                      className={`w-1.5 h-1.5 rounded-full ${i < 3 ? 'bg-primary/60' : 'bg-border/40'
-                        }`}
-                    />
-                  ))}
                 </div>
               </div>
             </div>
