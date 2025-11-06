@@ -30,9 +30,10 @@ interface Message {
 interface ChatAreaProps {
     messages: Message[];
     setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+    sidePanelOpen: boolean;
 }
 
-export function ChatArea({ messages, setMessages }: ChatAreaProps) {
+export function ChatArea({ messages, setMessages, sidePanelOpen }: ChatAreaProps) {
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(true);
@@ -131,7 +132,7 @@ export function ChatArea({ messages, setMessages }: ChatAreaProps) {
                         </div>
 
                         {/* Conversation Starters */}
-                        {showSuggestions && (
+                        {showSuggestions && !sidePanelOpen && (
                             <div className="space-y-4 animate-fade-in-up absolute">
 
                                 <div className="flex flex-col gap-3">

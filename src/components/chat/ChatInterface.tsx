@@ -4,9 +4,11 @@ import { useState } from "react";
 import { Header } from "../layout/ui/Header";
 import { Sidebar } from "../layout/ui/Sidebar";
 import { ChatArea } from "./ChatArea";
+import { SidePanel } from "../layout/ui/SidePanel";
 
 export default function ChatInterface() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [messages, setMessages] = useState<Array<{
     id: string;
     type: 'user' | 'assistant';
@@ -33,7 +35,12 @@ export default function ChatInterface() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         <Header onToggleSidebar={toggleSidebar} />
-        <ChatArea messages={messages} setMessages={setMessages} />
+        <ChatArea messages={messages} setMessages={setMessages} sidePanelOpen={sidePanelOpen}/>
+      </div>
+
+      <div className={`transition-all duration-300 ease-in-out ${sidePanelOpen ? 'w-[45vw]' : 'w-0'
+        } overflow-hidden border-r border-border`}>
+        <SidePanel isOpen={sidePanelOpen} />
       </div>
     </div>
   );
