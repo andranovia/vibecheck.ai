@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Header } from "../layout/ui/Header";
 import { Sidebar } from "../layout/ui/Sidebar";
 import { ChatArea } from "./ChatArea";
 import { SidePanel } from "../layout/ui/SidePanel";
+import { TrendingUp } from "lucide-react";
 
 export default function ChatInterface() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [sidePanelOpen, setSidePanelOpen] = useState(false);
+  const [sidePanelOpen, setSidePanelOpen] = useState(true);
   const [messages, setMessages] = useState<Array<{
     id: string;
     type: 'user' | 'assistant';
@@ -22,7 +23,10 @@ export default function ChatInterface() {
     };
   }>>([]);
 
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+    setSidePanelOpen((prev) => (prev ? true : false));
+  };
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
