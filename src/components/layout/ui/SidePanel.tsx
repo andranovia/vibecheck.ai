@@ -138,13 +138,13 @@ function SuggestionCard({ s }: { s: Suggestion }) {
                 </div>
                 <div className="ml-auto flex items-center gap-2">
                     {hasAudio && (
-                        <button
+                        <div
                             onClick={toggle}
                             className="rounded-md border border-white/10 p-1.5 hover:bg-white/5"
                             aria-label={playing ? "Pause preview" : "Play preview"}
                         >
                             {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                        </button>
+                        </div>
                     )}
                     {s.link && (
                         <a
@@ -213,18 +213,18 @@ function SuggestionCard({ s }: { s: Suggestion }) {
                 </div>
 
                 <div className="ml-auto flex items-center gap-2">
-                    <button
+                    <div
                         onClick={() => { }}
                         className="rounded-md border border-white/10 p-1.5 flex justify-center items-center"
                     >
                         {s.minutes ? <span className="text-xs text-emerald-400">{s.minutes}m</span> : null}
-                    </button>
-                    <button
+                    </div>
+                    <div
                         onClick={() => { }}
                         className="rounded-md border border-white/10 p-1.5 hover:bg-white/5"
                     >
                         <Play className="h-4 w-4 text-emerald-400" />
-                    </button>
+                    </div>
                 </div>
             </button>
         );
