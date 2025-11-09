@@ -8,6 +8,7 @@ import {
     ExternalLink, Play, Pause, Sparkles, Heart, Bookmark
 } from "lucide-react";
 import { useMemo, useRef, useState, useEffect } from "react";
+import ActiveSession from "./ActiveSession";
 
 /** ---------------- Types ---------------- */
 type Suggestion =
@@ -319,7 +320,7 @@ export function SidePanel({ isOpen }: SidebarProps) {
         },
     ];
 
-    const sparkline = [32, 48, 64, 52, 78, 92];
+
 
     return (
         <TooltipProvider delayDuration={300}>
@@ -346,7 +347,7 @@ export function SidePanel({ isOpen }: SidebarProps) {
                 </div>
 
                 {/* Messages */}
-                <ScrollArea className="flex-1 px-4 pb-6 h-[calc(100%-317.76px)]">
+                <ScrollArea className="flex-1 px-4 pb-6 h-[calc(100%-617.76px)]">
                     <div className="relative space-y-6 pr-2 ">
                         {conversation.map((message) => {
                             const isUser = message.author === "user";
@@ -384,28 +385,8 @@ export function SidePanel({ isOpen }: SidebarProps) {
                 </ScrollArea>
 
                 {/* Mood card */}
-                <div className="px-4 pb-6">
-                    <div className="relative rounded-3xl border border-white/10 bg-gradient-to-br from-primary/10 via-card/60 to-background/40 p-5">
-                        <div className="relative flex items-end justify-between gap-6">
-                            <div>
-                                <span className="text-[11px] uppercase tracking-[0.45em] text-primary/80">Mood Trajectory</span>
-                                <h3 className="mt-3 text-lg font-semibold text-foreground">Stability recovering</h3>
-                                <p className="mt-2 text-xs text-foreground/60">
-                                    Keep the ritual going—I'll refresh your focus score after the next guided break.
-                                </p>
-                            </div>
-                            <div className="relative flex h-20 w-28 items-end gap-1.5">
-                                {sparkline.map((value, index) => (
-                                    <span
-                                        key={`spark-${index}`}
-                                        className="w-2.5 rounded-full bg-gradient-to-t from-primary/5 via-primary/50 to-primary"
-                                        style={{ height: `${value}%` }}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <ActiveSession/>
+
             </div>
         </TooltipProvider>
     );
