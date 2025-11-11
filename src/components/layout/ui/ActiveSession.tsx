@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, Play, Pause, Square, Volume2, Zap, Clock, ChevronUp } from 'lucide-react';
+import { useTheme } from 'next-themes';
 
 
 type ActivityMode = "idle" | "running" | "paused" | "completed";
 
 export default function ActiveSession() {
+    const { theme, resolvedTheme } = useTheme();
     const [currentActivity, setCurrentActivity] = useState({
         title: "90s Micro-reset + Lo-fi Focus",
         subtitle: "Breath • posture • hydration • lo-fi loop",
@@ -82,11 +84,12 @@ export default function ActiveSession() {
 
     const status = statusConfig[currentActivity.mode];
     const progressDegrees = currentActivity.progress * 270;
+    const isDark = resolvedTheme === 'dark';
 
     return (
         <div
             ref={containerRef}
-            className="bg-gradient-to-br from-zinc-950 via-zinc-900 to-black flex items-center justify-center p-4"
+            className={`${isDark ? 'bg-gradient-to-br from-zinc-950 via-zinc-900 to-black' : 'bg-gradient-to-br from-zinc-50 via-zinc-100 to-white'} flex items-center justify-center p-4`}
             onClick={handleInteraction}
         >
             <div className="w-full">
@@ -104,7 +107,7 @@ export default function ActiveSession() {
                     />
 
                     <div
-                        className={`relative overflow-hidden border border-white/10 bg-gradient-to-br from-zinc-900/90 via-zinc-800/50 to-zinc-900/90 backdrop-blur-xl transition-all duration-700 ease-in-out rounded-md`}
+                        className={`relative overflow-hidden border ${isDark ? 'border-white/10 bg-gradient-to-br from-zinc-900/90 via-zinc-800/50 to-zinc-900/90' : 'border-zinc-200 bg-gradient-to-br from-white/95 via-zinc-50/80 to-white/95'} backdrop-blur-xl transition-all duration-700 ease-in-out rounded-md`}
                         style={{
                             height: isExpanded ? '302.3px' : '56px',
                         }}
@@ -114,9 +117,9 @@ export default function ActiveSession() {
                             className={`absolute inset-0 transition-opacity duration-700 ${isExpanded ? 'opacity-30' : 'opacity-20'
                                 }`}
                         >
-                            <div className="absolute top-0 -left-4 w-72 h-72 bg-emerald-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob" />
-                            <div className="absolute top-0 -right-4 w-72 h-72 bg-sky-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000" />
-                            <div className="absolute -bottom-8 left-20 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000" />
+                            <div className={`absolute top-0 -left-4 w-72 h-72 ${isDark ? 'bg-emerald-500' : 'bg-emerald-400'} rounded-full mix-blend-multiply filter blur-3xl animate-blob`} />
+                            <div className={`absolute top-0 -right-4 w-72 h-72 ${isDark ? 'bg-sky-500' : 'bg-sky-400'} rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000`} />
+                            <div className={`absolute -bottom-8 left-20 w-72 h-72 ${isDark ? 'bg-purple-500' : 'bg-purple-400'} rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000`} />
                         </div>
 
                         {/* Noise texture overlay */}
@@ -162,7 +165,7 @@ export default function ActiveSession() {
 
                                 {/* Compact title */}
                                 <div className="flex-1 min-w-0">
-                                    <div className="text-sm font-semibold text-white truncate">
+                                    <div className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-zinc-900'} truncate`}>
                                         {currentActivity.title}
                                     </div>
                                 </div>
@@ -175,7 +178,7 @@ export default function ActiveSession() {
                                             cy="16"
                                             r="14"
                                             fill="none"
-                                            stroke="rgba(255,255,255,0.1)"
+                                            stroke={isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}
                                             strokeWidth="2"
                                         />
                                         <circle
@@ -197,7 +200,7 @@ export default function ActiveSession() {
                                             </linearGradient>
                                         </defs>
                                     </svg>
-                                    <div className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-white/80">
+                                    <div className={`absolute inset-0 flex items-center justify-center text-[9px] font-bold ${isDark ? 'text-white/80' : 'text-zinc-900/80'}`}>
                                         {Math.round(currentActivity.progress * 100)}%
                                     </div>
                                 </div>
@@ -224,7 +227,7 @@ export default function ActiveSession() {
                                                 cy="32"
                                                 r="28"
                                                 fill="none"
-                                                stroke="rgba(255,255,255,0.05)"
+                                                stroke={isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}
                                                 strokeWidth="2"
                                             />
                                             {/* Progress ring */}
@@ -269,7 +272,7 @@ export default function ActiveSession() {
                                         </div>
 
                                         {/* Percentage */}
-                                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-bold text-white/80">
+                                        <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-bold ${isDark ? 'text-white/80' : 'text-zinc-900/80'}`}>
                                             {Math.round(currentActivity.progress * 100)}%
                                         </div>
                                     </div>
@@ -297,11 +300,11 @@ export default function ActiveSession() {
                                             )}
                                         </div>
 
-                                        <h3 className="text-lg font-bold text-white mb-1 leading-tight">
+                                        <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-zinc-900'} mb-1 leading-tight`}>
                                             {currentActivity.title}
                                         </h3>
 
-                                        <p className="text-xs text-white/50 leading-relaxed">
+                                        <p className={`text-xs ${isDark ? 'text-white/50' : 'text-zinc-600'} leading-relaxed`}>
                                             {currentActivity.subtitle}
                                         </p>
                                     </div>
@@ -326,28 +329,28 @@ export default function ActiveSession() {
                                 {/* Feature badges */}
                                 <div className="flex items-center gap-2 mb-5">
                                     {currentActivity.hasMusic && (
-                                        <div className="group/badge flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-sky-500/30 transition-all duration-300 cursor-pointer">
+                                        <div className={`group/badge flex items-center gap-1.5 px-3 py-1.5 rounded-full ${isDark ? 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-sky-500/30' : 'bg-zinc-100 border-zinc-200 hover:bg-zinc-200 hover:border-sky-500/50'} border transition-all duration-300 cursor-pointer`}>
                                             <Volume2 className="w-3 h-3 text-sky-400 group-hover/badge:scale-110 transition-transform" />
-                                            <span className="text-[10px] font-medium text-white/70">Lo-fi focus</span>
+                                            <span className={`text-[10px] font-medium ${isDark ? 'text-white/70' : 'text-zinc-700'}`}>Lo-fi focus</span>
                                             <div className="w-1 h-1 rounded-full bg-sky-400/50 group-hover/badge:animate-pulse" />
                                         </div>
                                     )}
                                     {currentActivity.hasRitual && (
-                                        <div className="group/badge flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-emerald-500/30 transition-all duration-300 cursor-pointer">
+                                        <div className={`group/badge flex items-center gap-1.5 px-3 py-1.5 rounded-full ${isDark ? 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-emerald-500/30' : 'bg-zinc-100 border-zinc-200 hover:bg-zinc-200 hover:border-emerald-500/50'} border transition-all duration-300 cursor-pointer`}>
                                             <Sparkles className="w-3 h-3 text-emerald-400 group-hover/badge:scale-110 transition-transform" />
-                                            <span className="text-[10px] font-medium text-white/70">Micro-reset</span>
+                                            <span className={`text-[10px] font-medium ${isDark ? 'text-white/70' : 'text-zinc-700'}`}>Micro-reset</span>
                                             <Zap className="w-2.5 h-2.5 text-emerald-400/70" />
                                         </div>
                                     )}
-                                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 ml-auto">
+                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${isDark ? 'bg-white/5 border-white/10' : 'bg-zinc-100 border-zinc-200'} border ml-auto`}>
                                         <Clock className="w-3 h-3 text-purple-400" />
-                                        <span className="text-[10px] font-bold text-white/90">{currentActivity.eta}</span>
+                                        <span className={`text-[10px] font-bold ${isDark ? 'text-white/90' : 'text-zinc-900'}`}>{currentActivity.eta}</span>
                                     </div>
                                 </div>
 
                                 <div className='flex justify-center items-center gap-4'>
                                     <div className="relative w-full ">
-                                        <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                                        <div className={`h-1 w-full ${isDark ? 'bg-white/5' : 'bg-zinc-200'} rounded-full overflow-hidden`}>
                                             <div
                                                 className="h-full bg-gradient-to-r from-emerald-400 via-sky-400 to-purple-400 rounded-full transition-all duration-500 relative"
                                                 style={{ width: `${currentActivity.progress * 100}%` }}
@@ -356,9 +359,9 @@ export default function ActiveSession() {
                                             </div>
                                         </div>
                                         {/* Progress text */}
-                                        <div className="flex justify-between items-center mt-2 text-[10px] text-white/40">
+                                        <div className={`flex justify-between items-center mt-2 text-[10px] ${isDark ? 'text-white/40' : 'text-zinc-500'}`}>
                                             <span>In sync with your flow</span>
-                                            <span className="font-mono text-white/60">{currentActivity.eta} remaining</span>
+                                            <span className={`font-mono ${isDark ? 'text-white/60' : 'text-zinc-700'}`}>{currentActivity.eta} remaining</span>
                                         </div>
                                     </div>
 
@@ -373,13 +376,13 @@ export default function ActiveSession() {
                                             onMouseLeave={() => setHoveredAction(null)}
                                             className="flex-1 group/btn relative overflow-hidden rounded-md bg-gradient-to-r from-emerald-500 to-sky-500 p-[1px] transition-all duration-200"
                                         >
-                                            <div className="relative bg-background rounded-md px-3 h-11 flex items-center justify-center gap-2 group-hover/btn:bg-background/70 transition-colors">
+                                            <div className={`relative ${isDark ? 'bg-background' : 'bg-white'} rounded-md px-3 h-11 flex items-center justify-center gap-2 group-hover/btn:${isDark ? 'bg-background/70' : 'bg-white/70'} transition-colors`}>
                                                 {currentActivity.mode === "running" ? (
-                                                    <Pause className="w-4 h-4 text-white" />
+                                                    <Pause className={`w-4 h-4 ${isDark ? 'text-white' : 'text-zinc-900'}`} />
                                                 ) : (
-                                                    <Play className="w-4 h-4 text-white" />
+                                                    <Play className={`w-4 h-4 ${isDark ? 'text-white' : 'text-zinc-900'}`} />
                                                 )}
-                                                <span className="text-sm font-medium text-white">
+                                                <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-zinc-900'}`}>
                                                     {currentActivity.mode === "running" ? "Pause" : "Resume"}
                                                 </span>
                                                 {hoveredAction === 'play' && (
@@ -395,9 +398,9 @@ export default function ActiveSession() {
                                             }}
                                             onMouseEnter={() => setHoveredAction('end')}
                                             onMouseLeave={() => setHoveredAction(null)}
-                                            className="relative rounded-md bg-white/5 border border-white/10 px-4  h-[46px] hover:bg-white/10 hover:border-red-500/30 transition-all duration-200 group/end"
+                                            className={`relative rounded-md ${isDark ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-zinc-100 border-zinc-200 hover:bg-zinc-200'} border px-4 h-[46px] hover:border-red-500/30 transition-all duration-200 group/end`}
                                         >
-                                            <Square className="w-4 h-4 text-white/70 group-hover/end:text-red-400 transition-colors" />
+                                            <Square className={`w-4 h-4 ${isDark ? 'text-white/70' : 'text-zinc-600'} group-hover/end:text-red-400 transition-colors`} />
                                             {hoveredAction === 'end' && (
                                                 <div className="absolute inset-0 bg-red-500/10 rounded-md" />
                                             )}
