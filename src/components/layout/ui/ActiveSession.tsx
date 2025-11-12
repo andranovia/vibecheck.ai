@@ -21,31 +21,32 @@ export default function ActiveSession() {
     const [soundWave, setSoundWave] = useState(Array(12).fill(0.5));
     const [isHydrated, setIsHydrated] = useState(false);
     const [isExpanded, setIsExpanded] = useState(true);
-    const [lastInteraction, setLastInteraction] = useState(Date.now());
+    const [lastInteraction, setLastInteraction] = useState(0);
     const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         setIsHydrated(true);
+        setLastInteraction(Date.now());
     }, []);
 
     // Auto-collapse logic
-    useEffect(() => {
-        const shouldAutoCollapse = currentActivity.mode === "idle" || currentActivity.mode === "completed";
+    // useEffect(() => {
+    //     const shouldAutoCollapse = currentActivity.mode === "idle" || currentActivity.mode === "completed";
 
-        if (!shouldAutoCollapse && currentActivity.mode === "running") {
-            // Auto-collapse after 10 seconds of no interaction when running
-            const timer = setTimeout(() => {
-                if (Date.now() - lastInteraction >= 10000) {
-                    setIsExpanded(false);
-                }
-            }, 10000);
-            return () => clearTimeout(timer);
-        } else if (shouldAutoCollapse) {
-            // Immediately collapse on idle/completed
-            const timer = setTimeout(() => setIsExpanded(false), 2000);
-            return () => clearTimeout(timer);
-        }
-    }, [currentActivity.mode, lastInteraction]);
+    //     if (!shouldAutoCollapse && currentActivity.mode === "running") {
+    //         // Auto-collapse after 10 seconds of no interaction when running
+    //         const timer = setTimeout(() => {
+    //             if (Date.now() - lastInteraction >= 10000) {
+    //                 setIsExpanded(false);
+    //             }
+    //         }, 10000);
+    //         return () => clearTimeout(timer);
+    //     } else if (shouldAutoCollapse) {
+    //         // Immediately collapse on idle/completed
+    //         const timer = setTimeout(() => setIsExpanded(false), 2000);
+    //         return () => clearTimeout(timer);
+    //     }
+    // }, [currentActivity.mode, lastInteraction]);
 
     // Track user interaction
     const handleInteraction = () => {
@@ -54,13 +55,13 @@ export default function ActiveSession() {
     };
 
     useEffect(() => {
-        if (isHydrated && currentActivity.mode === "running" && currentActivity.hasMusic) {
+        if (currentActivity.mode === "running" && currentActivity.hasMusic) {
             const interval = setInterval(() => {
                 setSoundWave(prev => prev.map(() => 0.3 + Math.random() * 0.7));
             }, 150);
             return () => clearInterval(interval);
         }
-    }, [isHydrated, currentActivity.mode, currentActivity.hasMusic]);
+    }, [currentActivity.mode, currentActivity.hasMusic]);
 
     const togglePlayPause = () => {
         handleInteraction();
@@ -85,6 +86,14 @@ export default function ActiveSession() {
     const status = statusConfig[currentActivity.mode];
     const progressDegrees = currentActivity.progress * 270;
     const isDark = resolvedTheme === 'dark';
+
+    if (!isHydrated) {
+        return (
+            <div className="flex items-center justify-center p-4 min-h-[302.3px]">
+                <div className="w-full h-[56px]" />
+            </div>
+        );
+    }
 
     return (
         <div
@@ -329,20 +338,20 @@ export default function ActiveSession() {
                                 {/* Feature badges */}
                                 <div className="flex items-center gap-2 mb-5">
                                     {currentActivity.hasMusic && (
-                                        <div className={`group/badge flex items-center gap-1.5 px-3 py-1.5 rounded-full ${isDark ? 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-sky-500/30' : 'bg-zinc-100 border-zinc-200 hover:bg-zinc-200 hover:border-sky-500/50'} border transition-all duration-300 cursor-pointer`}>
+                                        <div className={`group/badge flex items-center gap-1.5 px-3 py-1.5 rounded-full ${isDark ? 'bg-white/5 hover:bg-white/10 hover:border-sky-500/30' : 'bg-zinc-100 hover:bg-zinc-200 hover:border-sky-500/50'} border transition-all duration-300 cursor-pointer border-border`}>
                                             <Volume2 className="w-3 h-3 text-sky-400 group-hover/badge:scale-110 transition-transform" />
                                             <span className={`text-[10px] font-medium ${isDark ? 'text-white/70' : 'text-zinc-700'}`}>Lo-fi focus</span>
                                             <div className="w-1 h-1 rounded-full bg-sky-400/50 group-hover/badge:animate-pulse" />
                                         </div>
                                     )}
                                     {currentActivity.hasRitual && (
-                                        <div className={`group/badge flex items-center gap-1.5 px-3 py-1.5 rounded-full ${isDark ? 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-emerald-500/30' : 'bg-zinc-100 border-zinc-200 hover:bg-zinc-200 hover:border-emerald-500/50'} border transition-all duration-300 cursor-pointer`}>
+                                        <div className={`group/badge flex items-center gap-1.5 px-3 py-1.5 rounded-full ${isDark ? 'bg-white/5 hover:bg-white/10 hover:border-emerald-500/30' : 'bg-zinc-100 hover:bg-zinc-200 hover:border-emerald-500/50'} border transition-all duration-300 cursor-pointer border-border`}>
                                             <Sparkles className="w-3 h-3 text-emerald-400 group-hover/badge:scale-110 transition-transform" />
                                             <span className={`text-[10px] font-medium ${isDark ? 'text-white/70' : 'text-zinc-700'}`}>Micro-reset</span>
                                             <Zap className="w-2.5 h-2.5 text-emerald-400/70" />
                                         </div>
                                     )}
-                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${isDark ? 'bg-white/5 border-white/10' : 'bg-zinc-100 border-zinc-200'} border ml-auto`}>
+                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${isDark ? 'bg-white/5' : 'bg-zinc-100'} border ml-auto border-border `}>
                                         <Clock className="w-3 h-3 text-purple-400" />
                                         <span className={`text-[10px] font-bold ${isDark ? 'text-white/90' : 'text-zinc-900'}`}>{currentActivity.eta}</span>
                                     </div>
@@ -367,6 +376,7 @@ export default function ActiveSession() {
 
                                     {/* Control buttons - floating style */}
                                     <div className="flex items-center gap-2 justify-between w-[35%]">
+                                        {/* Play/Pause Button */}
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -374,23 +384,21 @@ export default function ActiveSession() {
                                             }}
                                             onMouseEnter={() => setHoveredAction('play')}
                                             onMouseLeave={() => setHoveredAction(null)}
-                                            className="flex-1 group/btn relative overflow-hidden rounded-md bg-gradient-to-r from-emerald-500 to-sky-500 p-[1px] transition-all duration-200"
+                                            className="flex-1 group/btn relative overflow-hidden rounded-sm bg-background hover:bg-background/80 border border-border hover:border-primary/50 transition-all duration-300 backdrop-blur-sm"
                                         >
-                                            <div className={`relative ${isDark ? 'bg-background' : 'bg-white'} rounded-md px-3 h-11 flex items-center justify-center gap-2 group-hover/btn:${isDark ? 'bg-background/70' : 'bg-white/70'} transition-colors`}>
+                                            <div className="relative px-4 h-11 flex items-center justify-center gap-2">
                                                 {currentActivity.mode === "running" ? (
-                                                    <Pause className={`w-4 h-4 ${isDark ? 'text-white' : 'text-zinc-900'}`} />
+                                                    <Pause className="w-4 h-4 text-muted-foreground group-hover/btn:text-primary transition-colors duration-300" />
                                                 ) : (
-                                                    <Play className={`w-4 h-4 ${isDark ? 'text-white' : 'text-zinc-900'}`} />
+                                                    <Play className="w-4 h-4 text-muted-foreground group-hover/btn:text-primary transition-colors duration-300" />
                                                 )}
-                                                <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                                                <span className="text-sm font-medium text-muted-foreground group-hover/btn:text-foreground transition-colors duration-300">
                                                     {currentActivity.mode === "running" ? "Pause" : "Resume"}
                                                 </span>
-                                                {hoveredAction === 'play' && (
-                                                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-sky-500/20" />
-                                                )}
                                             </div>
                                         </button>
 
+                                        {/* End Button */}
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -398,12 +406,9 @@ export default function ActiveSession() {
                                             }}
                                             onMouseEnter={() => setHoveredAction('end')}
                                             onMouseLeave={() => setHoveredAction(null)}
-                                            className={`relative rounded-md ${isDark ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-zinc-100 border-zinc-200 hover:bg-zinc-200'} border px-4 h-[46px] hover:border-red-500/30 transition-all duration-200 group/end`}
+                                            className="relative rounded-sm bg-background hover:bg-background/80 border border-border hover:border-destructive/50 transition-all duration-300 backdrop-blur-sm px-4 h-11 group/end"
                                         >
-                                            <Square className={`w-4 h-4 ${isDark ? 'text-white/70' : 'text-zinc-600'} group-hover/end:text-red-400 transition-colors`} />
-                                            {hoveredAction === 'end' && (
-                                                <div className="absolute inset-0 bg-red-500/10 rounded-md" />
-                                            )}
+                                            <Square className="w-4 h-4 text-muted-foreground group-hover/end:text-destructive transition-colors duration-300" />
                                         </button>
                                     </div>
                                 </div>
