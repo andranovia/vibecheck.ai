@@ -1,6 +1,21 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export type Suggestion =
+    | { type: "music"; title: string; subtitle?: string; link?: string; previewUrl?: string; mood?: string }
+    | { type: "quote"; text: string; author?: string }
+    | { type: "movie" | "series" | "book"; title: string; note?: string; year?: string; link?: string }
+    | { type: "action"; label: string; minutes?: number; id?: string };
+
+export interface Message {
+    id: string;
+    type: 'user' | 'assistant';
+    content: string;
+    timestamp: Date;
+    suggestions?: Suggestion[];
+}
+
+
 export interface CustomProxy {
   id: string;
   configName: string;    // Configuration name
@@ -44,4 +59,12 @@ export const useApiKeysStore = create<ApiKeysState>()(
       name: 'vibecheck-api-keys',
     }
   )
+);
+
+
+export const useMessagesStore = create<{ messages: any[]; setMessages: (msgs: any[]) => void }>(
+  (set) => ({
+    messages: [],
+    setMessages: (msgs) => set({ messages: msgs }),
+  })
 );

@@ -12,20 +12,9 @@ import {
     Smile,
 } from "lucide-react";
 import dynamic from "next/dynamic";
+import { Message } from "@/lib/store";
 
 const MetaCloud = dynamic(() => import("@/components/chat/ui/MetaCloud"), { ssr: false });
-interface Message {
-    id: string;
-    type: 'user' | 'assistant';
-    content: string;
-    timestamp: Date;
-    mood?: string;
-    recommendations?: {
-        song?: string;
-        quote?: string;
-        image?: string;
-    };
-}
 
 interface ChatAreaProps {
     messages: Message[];
@@ -56,7 +45,6 @@ export function ChatArea({ messages, setMessages, sidePanelOpen }: ChatAreaProps
     const handleSend = async () => {
         if (!input.trim() || isLoading) return;
     
-
         const userMessage: Message = {
             id: Date.now().toString(),
             type: 'user',
@@ -70,7 +58,6 @@ export function ChatArea({ messages, setMessages, sidePanelOpen }: ChatAreaProps
         setShowSuggestions(false);
 
         try {
-            // Import dynamically to avoid SSR issues with zustand
             const { generateResponse } = await import('@/lib/chatService');
             const { useApiKeysStore } = await import('@/lib/store');
 

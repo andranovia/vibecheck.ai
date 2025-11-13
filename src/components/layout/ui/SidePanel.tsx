@@ -5,32 +5,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Music2, Quote as QuoteIcon, Film, Tv, BookOpen,
-    ExternalLink, Play, Pause, Sparkles, Heart, Bookmark
+    ExternalLink, Play, Pause, Sparkles
 } from "lucide-react";
 import { useMemo, useRef, useState, useEffect } from "react";
 import ActiveSession from "./ActiveSession";
-
-/** ---------------- Types ---------------- */
-type Suggestion =
-    | { type: "music"; title: string; subtitle?: string; link?: string; previewUrl?: string; mood?: string }
-    | { type: "quote"; text: string; author?: string }
-    | { type: "movie" | "series" | "book"; title: string; note?: string; year?: string; link?: string }
-    | { type: "action"; label: string; minutes?: number; id?: string };
-
-interface Message {
-    id: string;
-    author: "ai" | "user";
-    name: string;
-    tone: string;
-    content: string;
-    timestamp: string;
-    tags: string[];
-    avatar?: string;
-    suggestions?: Suggestion[]; // new
-}
+import { Message, Suggestion } from "@/lib/store";
 
 /** -------------- Helpers -------------- */
-/** tiny audio hook for local previews */
 function useAudio(url?: string) {
     const [playing, setPlaying] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -57,71 +38,6 @@ function useAudio(url?: string) {
         }
     };
     return { playing, toggle, hasAudio: !!url };
-}
-
-/** Fallback “AI chooses” suggestions if message has none */
-function autoSuggest(msg: Message, mood: string): Suggestion[] {
-    const fromTags = (tags: string[]) => ({
-        breath: tags.some(t => /breath|reset/i.test(t)),
-        focus: tags.some(t => /focus|micro/i.test(t)),
-        overload: tags.some(t => /overload|switch/i.test(t)),
-        calm: /calm|regulated/i.test(msg.tone) || mood === "calm",
-    });
-
-    const t = fromTags(msg.tags);
-
-    // pick 1–2 suggestions
-    const out: Suggestion[] = [];
-
-    if (t.breath || t.calm) {
-        out.push({
-            type: "music",
-            title: "Lo-fi Breathing Loop",
-            subtitle: "60 BPM • gentle pads",
-            // host a tiny mp3 in your public/ later; placeholder here
-            previewUrl: "/audio/lofi-60bpm-preview.mp3",
-            link: "https://open.spotify.com/",
-            mood: "calm",
-        });
-        out.push({
-            type: "quote",
-            text: "The quieter you become, the more you are able to hear.",
-            author: "Ram Dass",
-        });
-    } else if (t.focus) {
-        out.push({
-            type: "music",
-            title: "Deep Focus (brown noise)",
-            subtitle: "no lyrics",
-            previewUrl: "/audio/brown-noise-15s.mp3",
-            link: "https://open.spotify.com/",
-            mood: "focus",
-        });
-        out.push({
-            type: "action",
-            label: "90-second micro-reset",
-            minutes: 2,
-        });
-    } else if (t.overload) {
-        out.push({
-            type: "series",
-            title: "3-min Box Breathing Guide",
-            note: "short video",
-            link: "https://youtu.be/",
-        });
-        out.push({
-            type: "quote",
-            text: "You do not rise to the level of your goals. You fall to the level of your systems.",
-            author: "James Clear",
-        });
-    } else {
-        out.push({
-            type: "quote",
-            text: "No rain, no flowers.",
-        });
-    }
-
-    return out.slice(0, 2);
 }
 
 /** -------------- UI Pieces -------------- */
@@ -238,12 +154,11 @@ function MessageFooter({ message, mood }: { message: Message; mood: string }) {
     const suggestions = useMemo(
         () => (message.suggestions && message.suggestions.length > 0
             ? message.suggestions
-            : autoSuggest(message, mood)),
+            : []),
         [message, mood]
     ).slice(0, 2);
 
-    if (message.author !== "ai" || suggestions.length === 0) return null;
-
+    if (message.type !== "assistant" || suggestions.length === 0) return null;
     return (
         <AnimatePresence initial={false}>
             <motion.div
@@ -272,13 +187,10 @@ export function SidePanel({ isOpen }: SidebarProps) {
     const conversation: Message[] = [
         {
             id: "msg-ai-1",
-            author: "ai",
-            name: "Vibecheck AI",
-            tone: "grounding coach",
+            type: "assistant",
             content:
                 "I'm picking up fatigue spikes and scattered focus. Let's anchor together with a 4-2-6 breath so your nervous system can exhale some of that pressure.",
-            timestamp: "2:14 PM",
-            tags: ["breathwork", "reset"],
+            timestamp: new Date("2025-01-01T14:14:00"),
             suggestions: [
                 { type: "music", title: "Lo-fi Breathing Loop", subtitle: "60 BPM • gentle pads", link: "https://open.spotify.com/" },
                 { type: "quote", text: "The quieter you become, the more you are able to hear.", author: "Ram Dass" }
@@ -286,23 +198,17 @@ export function SidePanel({ isOpen }: SidebarProps) {
         },
         {
             id: "msg-user-1",
-            author: "user",
-            name: "You",
-            tone: "self check-in",
+            type: "user",
             content:
                 "Today has been nonstop handoffs. My brain keeps replaying open loops and the inbox chime won't stop echoing.",
-            timestamp: "2:16 PM",
-            tags: ["overloaded", "context switch"],
+            timestamp: new Date("2025-01-01T14:16:00"),
         },
         {
             id: "msg-ai-2",
-            author: "ai",
-            name: "Vibecheck AI",
-            tone: "micro-strategy",
+            type: "assistant",
             content:
                 "Copy that. I'm sketching a 90-second micro-reset: stand, hydrate, then jot your top three priorities on a sticky. I'll dim notifications for 5 minutes so you can land.",
-            timestamp: "2:17 PM",
-            tags: ["micro-break", "focus ritual"],
+            timestamp: new Date("2025-01-01T14:17:00"),
             suggestions: [
                 { type: "action", label: "Start 90-second micro-reset", minutes: 2 },
                 { type: "music", title: "Deep Focus (brown noise)", subtitle: "no lyrics", link: "https://open.spotify.com/" }
@@ -310,17 +216,12 @@ export function SidePanel({ isOpen }: SidebarProps) {
         },
         {
             id: "msg-user-2",
-            author: "user",
-            name: "You",
-            tone: "feedback loop",
+            type: "user",
             content:
                 "Yes, that feels doable. Tracking a calmer pulse already—it's wild how a tiny ritual changes the temperature.",
-            timestamp: "2:19 PM",
-            tags: ["regulated", "momentum"],
+            timestamp: new Date("2025-01-01T14:19:00"),
         },
     ];
-
-
 
     return (
         <TooltipProvider delayDuration={300}>
@@ -350,7 +251,7 @@ export function SidePanel({ isOpen }: SidebarProps) {
                 <ScrollArea className="flex-1 px-4 pb-6 h-[calc(100%-617.76px)]">
                     <div className="relative space-y-6 pr-2 ">
                         {conversation.map((message) => {
-                            const isUser = message.author === "user";
+                            const isUser = message.type === "user";
                             return (
                                 <div key={message.id} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
                                     <div className={`flex max-w-[85%] gap-3 ${isUser ? "flex-row-reverse text-right" : "flex-row"}`}>
@@ -359,7 +260,7 @@ export function SidePanel({ isOpen }: SidebarProps) {
                                                 }`}
                                         >
                                             <div className={`flex items-center gap-2 text-xs uppercase tracking-[0.25em] ${isUser ? "flex-row-reverse" : ""}`}>
-                                                <span className="text-[11px] font-semibold tracking-[0.28em]">{message.name}</span>
+                                                <span className="text-[11px] font-semibold tracking-[0.28em]">{message.type === "user" ? "You" : "Vibecheck ai"}</span>
                                             </div>
 
                                             <p className="mt-4 text-2xl leading-relaxed text-foreground/90">{message.content}</p>
@@ -368,7 +269,7 @@ export function SidePanel({ isOpen }: SidebarProps) {
                                             <MessageFooter message={message} mood={mood} />
 
                                             <div className={`mt-4 text-[10px] uppercase tracking-[0.4em] text-foreground/50 ${isUser ? "text-right" : ""}`}>
-                                                {message.timestamp}
+                                                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </div>
                                             <div
                                                 className={`pointer-events-none absolute top-1/2 hidden h-[2px] w-10 -translate-y-1/2 rounded-full blur ${isUser

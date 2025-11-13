@@ -1,6 +1,12 @@
 import { nanoid } from "nanoid";
 import axios from "axios";
-import { useApiKeysStore, CustomProxy } from "./store";
+import { useApiKeysStore } from "./store";
+
+type Suggestion =
+  | { type: "music"; title: string; subtitle?: string; link?: string; previewUrl?: string; mood?: string }
+  | { type: "quote"; text: string; author?: string }
+  | { type: "movie" | "series" | "book"; title: string; note?: string; year?: string; link?: string }
+  | { type: "action"; label: string; minutes?: number; id?: string };
 
 interface Message {
   id: string;
@@ -8,11 +14,7 @@ interface Message {
   content: string;
   timestamp: Date;
   mood?: string;
-  recommendations?: {
-    song?: string;
-    quote?: string;
-    image?: string;
-  };
+  suggestions?: Suggestion[];
 }
 
 interface ChatOptions {
@@ -23,10 +25,9 @@ interface ChatOptions {
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-// Helper function to parse JSON recommendations from the AI response
-export const parseRecommendationsFromResponse = (
+export const parseSuggestionsFromResponse = (
   content: string
-): { song?: string; quote?: string; image?: string } | null => {
+): Suggestion[] | null => {
   try {
     // Look for JSON blocks in the content, wrapped in ```json and ```
     const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
@@ -35,22 +36,19 @@ export const parseRecommendationsFromResponse = (
       const jsonStr = jsonMatch[1];
       const parsedData = JSON.parse(jsonStr);
 
-      return {
-        song: parsedData.song,
-        quote: parsedData.quote,
-        image: parsedData.moodImage || parsedData.image,
-      };
+      // Ensure it's an array
+      if (Array.isArray(parsedData)) {
+        return parsedData as Suggestion[];
+      }
     }
   } catch (error) {
-    console.error("Error parsing recommendations JSON:", error);
+    console.error("Error parsing suggestions JSON:", error);
   }
 
   return null;
 };
 
-// Helper function to remove the JSON block from the content
 export const removeJsonBlockFromContent = (content: string): string => {
-  // Remove the ```json ... ``` block from the content
   return content.replace(/```json\s*([\s\S]*?)\s*```/g, "").trim();
 };
 
@@ -182,57 +180,6 @@ const callOpenRouter = async (messages: any[], options: ChatOptions) => {
   }
 };
 
-const callCustomProxy = async (
-  proxy: CustomProxy,
-  messages: any[],
-  options: ChatOptions
-) => {
-  try {
-    // If the proxy has a custom prompt, replace the system message
-    if (proxy.customPrompt) {
-      // Find and replace the system message if present
-      const systemMessageIndex = messages.findIndex(
-        (msg) => msg.role === "system"
-      );
-      if (systemMessageIndex !== -1) {
-        messages[systemMessageIndex] = {
-          role: "system",
-          content: proxy.customPrompt,
-        };
-      } else {
-        // Add a system message if none exists
-        messages.unshift({
-          role: "system",
-          content: proxy.customPrompt,
-        });
-      }
-    }
-
-    const response = await axios.post(
-      proxy.endpoint,
-      {
-        model: proxy.modelName, // Use the specific model name from the config
-        messages: messages,
-        temperature: options.temperature || 0.7,
-        max_tokens: options.maxTokens || 1000,
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: proxy.apiKey ? `Bearer ${proxy.apiKey}` : undefined,
-        },
-      }
-    );
-
-    // Different proxies might have different response formats
-    // Here we assume it follows OpenAI format
-    return response.data.choices[0].message.content;
-  } catch (error) {
-    console.error(`Error calling custom config ${proxy.configName}:`, error);
-    throw error;
-  }
-};
-
 export const generateResponse = async (
   userMessage: string,
   previousMessages: Message[],
@@ -240,14 +187,6 @@ export const generateResponse = async (
 ): Promise<Message> => {
   const detectedMood = detectMood(userMessage);
 
-  const modelId = options.model;
-
-  // Check if it's a custom configuration
-  const customConfig = useApiKeysStore
-    .getState()
-    .customProxies.find((proxy) => proxy.id === modelId);
-
-  // Format messages for API
   const formattedMessages = formatMessagesForOpenRouter([
     ...previousMessages,
     {
@@ -276,22 +215,38 @@ export const generateResponse = async (
     
     RESPONSE STRUCTURE:
     1. Your main message should focus on empathizing with the user's mood
-    2. Include song recommendations relevant to their mood 
-    3. Include an inspiring quote that matches their emotional state
+    2. After your main response, provide 2 personalized suggestions to help them
     
-    After your main response, add special recommendations in JSON format wrapped in triple backticks like this:
+    After your main response, add special recommendations in JSON format wrapped in triple backticks.
+    Provide an array of 1-2 suggestions from these types:
     
+    - Music suggestion: {"type": "music", "title": "Song Name", "subtitle": "Artist • genre", "link": "spotify/youtube URL", "previewUrl": "optional", "mood": "calm|focus|energetic"}
+    - Quote: {"type": "quote", "text": "The quote text", "author": "Author Name"}
+    - Action/Exercise: {"type": "action", "label": "Brief activity name", "minutes": 2-5}
+    - Movie: {"type": "movie", "title": "Movie Title", "note": "Brief description", "year": "2024", "link": "imdb URL"}
+    - Series: {"type": "series", "title": "Series Title", "note": "Brief description", "link": "URL"}
+    - Book: {"type": "book", "title": "Book Title", "note": "Brief description", "link": "goodreads URL"}
+    
+    Example format:
     \`\`\`json
-    {
-      "song": "Song Name - Artist",
-      "quote": "The quote text - Author",
-      "moodImage": "Brief description of an image that represents this mood"
-    }
+    [
+      {
+        "type": "music",
+        "title": "Lo-fi Breathing Loop",
+        "subtitle": "60 BPM • gentle pads",
+        "link": "https://open.spotify.com/",
+        "mood": "calm"
+      },
+      {
+        "type": "quote",
+        "text": "The quieter you become, the more you are able to hear.",
+        "author": "Ram Dass"
+      }
+    ]
     \`\`\`
     
-    The app will parse this JSON to display recommendations to the user.`;
+    Choose suggestions that genuinely match the user's emotional state and would be helpful.`;
 
-  // Add system message
   formattedMessages.unshift({
     role: "system",
     content: systemPrompt,
@@ -300,20 +255,10 @@ export const generateResponse = async (
   try {
     let aiContent;
 
-    if (customConfig) {
-      aiContent = await callCustomProxy(
-        customConfig,
-        formattedMessages,
-        options
-      );
-    } else {
-      aiContent = await callOpenRouter(formattedMessages, options);
-    }
+    aiContent = await callOpenRouter(formattedMessages, options);
 
-    // Parse recommendations from the JSON block in the response if available
-    const recommendations =
-      parseRecommendationsFromResponse(aiContent) ||
-      getRecommendationsForMood(detectedMood);
+    // Parse suggestions from the AI response
+    const suggestions = parseSuggestionsFromResponse(aiContent);
 
     // Remove the JSON block from the displayed content
     const cleanedContent = removeJsonBlockFromContent(aiContent);
@@ -324,7 +269,7 @@ export const generateResponse = async (
       content: cleanedContent,
       timestamp: new Date(),
       mood: detectedMood,
-      recommendations: recommendations,
+      suggestions: suggestions || undefined,
     };
   } catch (error) {
     console.error("Error generating response:", error);
