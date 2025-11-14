@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useApiKeysStore } from '@/lib/store';
-import { Bot, Brain, ChevronDown, MessageCircle, Mic, Plus, Rabbit, RouteOff, Sparkles, Zap } from 'lucide-react';
+import { Bot, Brain, ChevronDown, MessageCircle, Mic, Plus, RouteOff, Zap } from 'lucide-react';
 import React, { useEffect, useState } from 'react'
 
 interface AIModel {
@@ -33,8 +33,8 @@ const modes = [
 
 const models: AIModel[] = [
     {
-        id: "gpt-4",
-        name: "GPT-4",
+        id: "gpt-5",
+        name: "GPT-5",
         provider: "OpenAI",
         icon: Brain,
         color: "text-green-600",
@@ -42,41 +42,14 @@ const models: AIModel[] = [
         features: ["Reasoning", "Code", "Analysis"],
     },
     {
-        id: "gpt-3.5-turbo",
-        name: "GPT-3.5 Turbo",
-        provider: "OpenAI",
+        id: "deepseek/deepseek-chat-v3.1",
+        name: "DeepSeek Chat V3.1",
+        provider: "DeepSeek",
         icon: Zap,
         color: "text-blue-600",
         description: "Fast and efficient for most tasks",
         features: ["Speed", "General", "Cost-effective"],
-    },
-    {
-        id: "claude-3-opus",
-        name: "Claude 3 Opus",
-        provider: "Anthropic",
-        icon: Sparkles,
-        color: "text-purple-600",
-        description: "Excellent for writing and analysis",
-        features: ["Writing", "Reasoning", "Creative"],
-    },
-    {
-        id: "claude-3-sonnet",
-        name: "Claude 3 Sonnet",
-        provider: "Anthropic",
-        icon: Bot,
-        color: "text-orange-600",
-        description: "Balanced performance and speed",
-        features: ["Balanced", "Fast", "Reliable"],
-    },
-    {
-        id: "llama-2-70b",
-        name: "Llama 2 70B",
-        provider: "Meta",
-        icon: Rabbit,
-        color: "text-indigo-600",
-        description: "Open source alternative",
-        features: ["Open Source", "Privacy", "Local"],
-    },
+    }
 ];
 
 const ModelSelection = ({ onModelChange, selectedMode, setSelectedMode, handleVoiceToggle }: { onModelChange?: (modelId: string) => void, selectedMode: string, setSelectedMode: (mode: string) => void, handleVoiceToggle: () => void }) => {
