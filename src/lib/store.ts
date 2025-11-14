@@ -41,9 +41,9 @@ interface ApiKeysState {
 export const useApiKeysStore = create<ApiKeysState>()(
   persist(
     (set) => ({
-      openRouterApiKey: null,
+      openRouterApiKey: process.env.OPENROUTER_API_KEY || null,
       customProxies: [],
-      defaultModel: process.env.NEXT_PUBLIC_DEFAULT_MODEL || 'gpt-4',
+      defaultModel: process.env.NEXT_PUBLIC_DEFAULT_MODEL || 'deepseek/deepseek-chat-v3.1',
       setOpenRouterApiKey: (key) => set({ openRouterApiKey: key }),
       addCustomProxy: (proxy) =>
         set((state) => ({
@@ -62,9 +62,26 @@ export const useApiKeysStore = create<ApiKeysState>()(
 );
 
 
-export const useMessagesStore = create<{ messages: any[]; setMessages: (msgs: any[]) => void }>(
-  (set) => ({
-    messages: [],
-    setMessages: (msgs) => set({ messages: msgs }),
-  })
+interface MessagesState {
+  messages: Message[];
+  setMessages: (messages: Message[]) => void;
+  addMessage: (message: Message) => void;
+  clearMessages: () => void;
+}
+
+export const useMessagesStore = create<MessagesState>()(
+  persist(
+    (set) => ({
+      messages: [],
+      setMessages: (messages) => set({ messages }),
+      addMessage: (message) =>
+        set((state) => ({
+          messages: [...state.messages, message],
+        })),
+      clearMessages: () => set({ messages: [] }),
+    }),
+    {
+      name: 'vibecheck-messages',
+    }
+  )
 );

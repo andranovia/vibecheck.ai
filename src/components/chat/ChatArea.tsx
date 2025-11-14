@@ -12,17 +12,19 @@ import {
     Smile,
 } from "lucide-react";
 import dynamic from "next/dynamic";
-import { Message } from "@/lib/store";
+import { Message, useMessagesStore } from "@/lib/store";
 
 const MetaCloud = dynamic(() => import("@/components/chat/ui/MetaCloud"), { ssr: false });
 
 interface ChatAreaProps {
-    messages: Message[];
-    setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
     sidePanelOpen: boolean;
 }
 
-export function ChatArea({ messages, setMessages, sidePanelOpen }: ChatAreaProps) {
+export function ChatArea({ sidePanelOpen }: ChatAreaProps) {
+    const messages = useMessagesStore((state) => state.messages);
+    const setMessages = useMessagesStore((state) => state.setMessages);
+    const addMessage = useMessagesStore((state) => state.addMessage);
+    
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(true);
@@ -52,39 +54,34 @@ export function ChatArea({ messages, setMessages, sidePanelOpen }: ChatAreaProps
             timestamp: new Date(),
         };
 
-        setMessages(prev => [...prev, userMessage]);
+        addMessage(userMessage);
         setInput("");
         setIsLoading(true);
         setShowSuggestions(false);
 
         try {
             const { generateResponse } = await import('@/lib/chatService');
-            const { useApiKeysStore } = await import('@/lib/store');
-
-            const selectedModel = useApiKeysStore.getState().defaultModel;
 
             const aiResponse = await generateResponse(
                 userMessage.content,
                 messages,
                 {
-                    model: selectedModel,
+                    model: "deepseek/deepseek-chat-v3.1",
                     temperature: 0.7,
                     maxTokens: 1000,
                 }
             );
 
-            setMessages(prev => [...prev, aiResponse]);
+            addMessage(aiResponse);
         } catch (error) {
             console.error('Error sending message:', error);
-
-            // Show error message
             const errorResponse: Message = {
                 id: Date.now().toString(),
                 type: 'assistant',
                 content: 'Sorry, I encountered an error. Please check your API settings or try again later.',
                 timestamp: new Date(),
             };
-            setMessages(prev => [...prev, errorResponse]);
+            addMessage(errorResponse);
         } finally {
             setIsLoading(false);
         }
@@ -100,7 +97,6 @@ export function ChatArea({ messages, setMessages, sidePanelOpen }: ChatAreaProps
             </div>
 
             {/* Welcome Message */}
-            {messages.length === 0 && (
                 <div className="flex-1 flex items-center justify-center p-8 relative z-10">
                     <div className="text-center max-w-2xl">
                         {/* Main Logo Animation */}
@@ -148,7 +144,6 @@ export function ChatArea({ messages, setMessages, sidePanelOpen }: ChatAreaProps
                         )}
                     </div>
                 </div>
-            )}
 
 
             {/* Enhanced Input Area */}

@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useMemo, useRef, useState, useEffect } from "react";
 import ActiveSession from "./ActiveSession";
-import { Message, Suggestion } from "@/lib/store";
+import { Message, Suggestion, useMessagesStore } from "@/lib/store";
 
 /** -------------- Helpers -------------- */
 function useAudio(url?: string) {
@@ -180,48 +180,12 @@ function MessageFooter({ message, mood }: { message: Message; mood: string }) {
 interface SidebarProps { isOpen: boolean; }
 
 export function SidePanel({ isOpen }: SidebarProps) {
-    if (!isOpen) return null;
+    const messages = useMessagesStore((state) => state.messages);
 
-    const [mood]: "happy" | "excited" | "calm" | "sad" | "neutral" = "sad"; // fixed
+    // Don't render if not open or no messages
+    if (!isOpen || messages.length === 0) return null;
 
-    const conversation: Message[] = [
-        {
-            id: "msg-ai-1",
-            type: "assistant",
-            content:
-                "I'm picking up fatigue spikes and scattered focus. Let's anchor together with a 4-2-6 breath so your nervous system can exhale some of that pressure.",
-            timestamp: new Date("2025-01-01T14:14:00"),
-            suggestions: [
-                { type: "music", title: "Lo-fi Breathing Loop", subtitle: "60 BPM • gentle pads", link: "https://open.spotify.com/" },
-                { type: "quote", text: "The quieter you become, the more you are able to hear.", author: "Ram Dass" }
-            ]
-        },
-        {
-            id: "msg-user-1",
-            type: "user",
-            content:
-                "Today has been nonstop handoffs. My brain keeps replaying open loops and the inbox chime won't stop echoing.",
-            timestamp: new Date("2025-01-01T14:16:00"),
-        },
-        {
-            id: "msg-ai-2",
-            type: "assistant",
-            content:
-                "Copy that. I'm sketching a 90-second micro-reset: stand, hydrate, then jot your top three priorities on a sticky. I'll dim notifications for 5 minutes so you can land.",
-            timestamp: new Date("2025-01-01T14:17:00"),
-            suggestions: [
-                { type: "action", label: "Start 90-second micro-reset", minutes: 2 },
-                { type: "music", title: "Deep Focus (brown noise)", subtitle: "no lyrics", link: "https://open.spotify.com/" }
-            ]
-        },
-        {
-            id: "msg-user-2",
-            type: "user",
-            content:
-                "Yes, that feels doable. Tracking a calmer pulse already—it's wild how a tiny ritual changes the temperature.",
-            timestamp: new Date("2025-01-01T14:19:00"),
-        },
-    ];
+    const [mood]: "happy" | "excited" | "calm" | "sad" | "neutral" = "sad"; // This should be dynamic based on latest AI message mood
 
     return (
         <TooltipProvider delayDuration={300}>
@@ -250,7 +214,7 @@ export function SidePanel({ isOpen }: SidebarProps) {
                 {/* Messages */}
                 <ScrollArea className="flex-1 px-4 pb-6 h-[calc(100%-617.76px)]">
                     <div className="relative space-y-6 pr-2 ">
-                        {conversation.map((message) => {
+                        {messages.map((message) => {
                             const isUser = message.type === "user";
                             return (
                                 <div key={message.id} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
@@ -269,7 +233,7 @@ export function SidePanel({ isOpen }: SidebarProps) {
                                             <MessageFooter message={message} mood={mood} />
 
                                             <div className={`mt-4 text-[10px] uppercase tracking-[0.4em] text-foreground/50 ${isUser ? "text-right" : ""}`}>
-                                                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </div>
                                             <div
                                                 className={`pointer-events-none absolute top-1/2 hidden h-[2px] w-10 -translate-y-1/2 rounded-full blur ${isUser
