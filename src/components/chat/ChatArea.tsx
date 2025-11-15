@@ -88,6 +88,8 @@ export function ChatArea({ sidePanelOpen }: ChatAreaProps) {
     };
 
 
+    console.log("Rendering ChatArea with messages:", messages);
+
     return (
         <div className="flex-1 flex flex-col h-full relative overflow-hidden">
             {/* Animated Background */}

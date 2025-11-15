@@ -2,6 +2,7 @@
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Music2, Quote as QuoteIcon, Film, Tv, BookOpen,
@@ -185,7 +186,13 @@ export function SidePanel({ isOpen }: SidebarProps) {
     // Don't render if not open or no messages
     if (!isOpen || messages.length === 0) return null;
 
-    const [mood]: "happy" | "excited" | "calm" | "sad" | "neutral" = "sad"; // This should be dynamic based on latest AI message mood
+    // Derive mood from the latest assistant message, fallback to "neutral"
+    const mood = (messages.slice().reverse().find((m) => m.type === "assistant")?.mood as
+        | "happy"
+        | "excited"
+        | "calm"
+        | "sad"
+        | "neutral") || "neutral";
 
     return (
         <TooltipProvider delayDuration={300}>
@@ -227,7 +234,9 @@ export function SidePanel({ isOpen }: SidebarProps) {
                                                 <span className="text-[11px] font-semibold tracking-[0.28em]">{message.type === "user" ? "You" : "Vibecheck ai"}</span>
                                             </div>
 
-                                            <p className="mt-4 text-2xl leading-relaxed text-foreground/90">{message.content}</p>
+                                            <div className="mt-4 text-2xl leading-relaxed text-foreground/90">
+                                                <MarkdownRenderer content={message.content} />
+                                            </div>
 
                                             {/* Footer with suggestions (AI only) */}
                                             <MessageFooter message={message} mood={mood} />

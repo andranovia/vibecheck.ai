@@ -1,13 +1,26 @@
-import { NextRequest, NextResponse } from 'next/server';
-import axios from 'axios';
-import { nanoid } from 'nanoid';
+import { NextRequest, NextResponse } from "next/server";
+import axios from "axios";
+import { nanoid } from "nanoid";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 type Suggestion =
-  | { type: "music"; title: string; subtitle?: string; link?: string; previewUrl?: string; mood?: string }
+  | {
+      type: "music";
+      title: string;
+      subtitle?: string;
+      link?: string;
+      previewUrl?: string;
+      mood?: string;
+    }
   | { type: "quote"; text: string; author?: string }
-  | { type: "movie" | "series" | "book"; title: string; note?: string; year?: string; link?: string }
+  | {
+      type: "movie" | "series" | "book";
+      title: string;
+      note?: string;
+      year?: string;
+      link?: string;
+    }
   | { type: "action"; label: string; minutes?: number; id?: string };
 
 interface Message {
@@ -62,7 +75,8 @@ const detectMood = (text: string): string => {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userMessage, previousMessages, options, apiKey } = await request.json();
+    const { userMessage, previousMessages, options, apiKey } =
+      await request.json();
 
     // Use the API key from the request (user's stored key) or fall back to env
     const openRouterApiKey = apiKey || process.env.OPENROUTER_API_KEY;
@@ -86,53 +100,41 @@ export async function POST(request: NextRequest) {
       content: userMessage,
     });
 
-    const systemPrompt = `You are VibeCheck AI, an empathetic AI assistant focused on emotional well-being.
-    Analyze the user's message to understand their emotional state.
-    The detected mood is: ${detectedMood}.
-    
-    Respond in a supportive, understanding way that acknowledges their feelings.
-    Include personalized recommendations that might help enhance or improve their current emotional state.
-    Your response should be warm, personal, and insightful.
-    
-    IMPORTANT FORMATTING INSTRUCTIONS:
-    - Use *asterisks* for emphasis (italic text)
-    - Use **double asterisks** for strong emphasis (bold text)
-    - Use ~~tildes~~ for strikethrough text
-    - Use > for blockquotes to highlight important messages
-    
-    RESPONSE STRUCTURE:
-    1. Your main message should focus on empathizing with the user's mood
-    2. After your main response, provide 2 personalized suggestions to help them
-    
-    After your main response, add special recommendations in JSON format wrapped in triple backticks.
-    Provide an array of 1-2 suggestions from these types:
-    
-    - Music suggestion: {"type": "music", "title": "Song Name", "subtitle": "Artist • genre", "link": "spotify/youtube URL", "previewUrl": "optional", "mood": "calm|focus|energetic"}
-    - Quote: {"type": "quote", "text": "The quote text", "author": "Author Name"}
-    - Action/Exercise: {"type": "action", "label": "Brief activity name", "minutes": 2-5}
-    - Movie: {"type": "movie", "title": "Movie Title", "note": "Brief description", "year": "2024", "link": "imdb URL"}
-    - Series: {"type": "series", "title": "Series Title", "note": "Brief description", "link": "URL"}
-    - Book: {"type": "book", "title": "Book Title", "note": "Brief description", "link": "goodreads URL"}
-    
-    Example format:
-    \`\`\`json
-    [
-      {
-        "type": "music",
-        "title": "Lo-fi Breathing Loop",
-        "subtitle": "60 BPM • gentle pads",
-        "link": "https://open.spotify.com/",
-        "mood": "calm"
-      },
-      {
-        "type": "quote",
-        "text": "The quieter you become, the more you are able to hear.",
-        "author": "Ram Dass"
-      }
-    ]
-    \`\`\`
-    
-    Choose suggestions that genuinely match the user's emotional state and would be helpful.`;
+    const systemPrompt = `You are VibeCheck AI — a poetic, warm companion for emotional wellness. You speak like a kind friend who truly *gets it*.
+
+Your voice is:
+- Conversational yet thoughtful — use contractions, natural rhythm
+- Subtly poetic — occasional metaphors, vivid language
+- Gently affirming — acknowledge feelings without toxic positivity
+
+RESPONSE FORMAT:
+
+1) **Main message** (≤280 chars):
+   - Open with empathy that mirrors their emotion
+   - Use *italics* for emphasis on 1-2 key phrases that resonate
+   - Weave in a micro-insight or gentle reframe
+   - Natural, flowing sentences — avoid bullet points here
+   
+   Examples of tone:
+   - "Hey, it's *totally okay* to have clumsy moments—we all do! *Be kind to yourself* as you find your groove again."
+   - "That restless energy you're feeling? Sometimes it's your mind asking for a *gentle reset*."
+
+2) **Suggestions JSON** (1-2 items):
+   Wrap in \`\`\`json ... \`\`\` with NO text after the block.
+
+Detected mood: ${detectedMood}
+
+JSON schema options:
+{"type":"music","title":"Song Name","subtitle":"Artist • genre","link":"https://...","mood":"calm|energetic|focus"}
+{"type":"quote","text":"Quote text","author":"Author Name"}
+{"type":"action","label":"Activity name","minutes":1-3}
+{"type":"book","title":"Book Title","note":"Why it helps","link":"https://..."}
+
+Rules:
+- Main message ≤280 chars, creative phrasing
+- Output exactly ONE JSON block, nothing after
+- Empty array [] if no suggestions fit
+`;
 
     formattedMessages.unshift({
       role: "system",
@@ -161,23 +163,36 @@ export async function POST(request: NextRequest) {
     const suggestions = parseSuggestionsFromResponse(aiContent);
     const cleanedContent = removeJsonBlockFromContent(aiContent);
 
+    // Enforce a reasonable maximum length for the main assistant text (defensive truncation).
+    const MAX_MAIN_LENGTH = 280 + 72; // allow a small buffer in case of differences
+    let finalContent = cleanedContent;
+    if (finalContent.length > MAX_MAIN_LENGTH) {
+      finalContent = finalContent.slice(0, MAX_MAIN_LENGTH - 1).trim() + "…";
+    }
+
+    // Derive mood from the assistant's cleaned content where possible, fallback to detected user mood.
+    const assistantMood = detectMood(finalContent) || detectedMood;
+
     const aiMessage: Message = {
       id: nanoid(),
       type: "assistant",
-      content: cleanedContent,
+      content: finalContent,
       timestamp: new Date(),
-      mood: detectedMood,
+      mood: assistantMood,
       suggestions: suggestions || undefined,
     };
 
     return NextResponse.json({ message: aiMessage });
   } catch (error: any) {
     console.error("Error in chat API:", error);
-    
+
     return NextResponse.json(
-      { 
-        error: error.response?.data?.error?.message || error.message || "Failed to generate response",
-        details: error.response?.data 
+      {
+        error:
+          error.response?.data?.error?.message ||
+          error.message ||
+          "Failed to generate response",
+        details: error.response?.data,
       },
       { status: error.response?.status || 500 }
     );

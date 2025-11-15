@@ -11,6 +11,7 @@ export interface Message {
     id: string;
     type: 'user' | 'assistant';
     content: string;
+    mood?: string;
     timestamp: Date;
     suggestions?: Suggestion[];
 }
