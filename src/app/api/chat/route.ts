@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 import { nanoid } from "nanoid";
+import { getTrackSuggestions } from "@/lib/tracks";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
@@ -119,13 +120,13 @@ RESPONSE FORMAT:
    - "Hey, it's *totally okay* to have clumsy moments—we all do! *Be kind to yourself* as you find your groove again."
    - "That restless energy you're feeling? Sometimes it's your mind asking for a *gentle reset*."
 
-2) **Suggestions JSON** (1-2 items):
-   Wrap in \`\`\`json ... \`\`\` with NO text after the block.
+2) **Suggestions JSON** (0-2 items):
+  Wrap in \`\`\`json ... \`\`\` with NO text after the block.
 
 Detected mood: ${detectedMood}
 
 JSON schema options:
-{"type":"music","title":"Song Name","subtitle":"Artist • genre","link":"https://...","mood":"calm|energetic|focus"}
+{"type":"music","title":"Vibe label","subtitle":"Why it fits","link":"","mood":"calm|energize|focus|night|grounding"}
 {"type":"quote","text":"Quote text","author":"Author Name"}
 {"type":"action","label":"Activity name","minutes":1-3}
 {"type":"book","title":"Book Title","note":"Why it helps","link":"https://..."}
@@ -133,6 +134,7 @@ JSON schema options:
 Rules:
 - Main message ≤280 chars, creative phrasing
 - Output exactly ONE JSON block, nothing after
+- Music suggestions are optional—if you include one, set the mood field (calm|energize|focus|night|grounding) and leave the link empty; the app attaches the audio.
 - Empty array [] if no suggestions fit
 `;
 
@@ -173,13 +175,26 @@ Rules:
     // Derive mood from the assistant's cleaned content where possible, fallback to detected user mood.
     const assistantMood = detectMood(finalContent) || detectedMood;
 
+    const rawSuggestions = (suggestions || []).slice(0, 2);
+
+    const combinedSuggestions = rawSuggestions
+      .map((item) => {
+        if (item.type === "music") {
+          const moodHint = item.mood || assistantMood;
+          const [trackSuggestion] = getTrackSuggestions(moodHint, 1);
+          return trackSuggestion || null;
+        }
+        return item;
+      })
+      .filter((item): item is Suggestion => Boolean(item));
+
     const aiMessage: Message = {
       id: nanoid(),
       type: "assistant",
       content: finalContent,
       timestamp: new Date(),
       mood: assistantMood,
-      suggestions: suggestions || undefined,
+      suggestions: combinedSuggestions.length ? combinedSuggestions : undefined,
     };
 
     return NextResponse.json({ message: aiMessage });
