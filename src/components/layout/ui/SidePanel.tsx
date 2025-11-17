@@ -12,7 +12,6 @@ import { useMemo, useRef, useState, useEffect } from "react";
 import ActiveSession from "./ActiveSession";
 import { Message, Suggestion, useMessagesStore } from "@/lib/store";
 
-/** -------------- Helpers -------------- */
 function useAudio(url?: string) {
     const [playing, setPlaying] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -41,7 +40,6 @@ function useAudio(url?: string) {
     return { playing, toggle, hasAudio: !!url };
 }
 
-/** -------------- UI Pieces -------------- */
 function SuggestionCard({ s }: { s: Suggestion }) {
     if (s.type === "music") {
         const { playing, toggle, hasAudio } = useAudio(s.previewUrl);
@@ -238,7 +236,6 @@ export function SidePanel({ isOpen }: SidebarProps) {
                                                 <MarkdownRenderer content={message.content} />
                                             </div>
 
-                                            {/* Footer with suggestions (AI only) */}
                                             <MessageFooter message={message} mood={mood} />
 
                                             <div className={`mt-4 text-[10px] uppercase tracking-[0.4em] text-foreground/50 ${isUser ? "text-right" : ""}`}>
@@ -258,7 +255,7 @@ export function SidePanel({ isOpen }: SidebarProps) {
                     </div>
                 </ScrollArea>
 
-                {/* Mood card */}
+                {/* Footer */}
                 <ActiveSession/>
 
             </div>

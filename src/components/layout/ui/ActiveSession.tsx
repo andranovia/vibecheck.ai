@@ -1,23 +1,139 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Play, Pause, Square, Volume2, Zap, Clock, ChevronUp } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Sparkles, Play, Pause, Square, Volume2, Zap, Clock } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { Message, Suggestion, useMessagesStore } from '@/lib/store';
 
 
 type ActivityMode = "idle" | "running" | "paused" | "completed";
 
-export default function ActiveSession() {
-    const { theme, resolvedTheme } = useTheme();
-    const [currentActivity, setCurrentActivity] = useState({
-        title: "90s Micro-reset + Lo-fi Focus",
-        subtitle: "Breath • posture • hydration • lo-fi loop",
-        mode: "running" as ActivityMode,
-        progress: 0.42,
-        eta: "01:05",
-        hasMusic: true,
-        hasRitual: true,
-    });
+type ActivityState = {
+    sessionId: string | null;
+    title: string;
+    subtitle: string;
+    mode: ActivityMode;
+    progress: number;
+    eta: string;
+    hasMusic: boolean;
+    hasRitual: boolean;
+    durationMinutes: number | null;
+    startedAt: number | null;
+    elapsedMs: number;
+};
 
-    const [hoveredAction, setHoveredAction] = useState<string | null>(null);
+type ActionSuggestion = Extract<Suggestion, { type: "action" }>;
+type MusicSuggestion = Extract<Suggestion, { type: "music" }>;
+
+interface DerivedSession {
+    sessionId: string;
+    title: string;
+    summary: string;
+    minutes: number;
+    hasMusic: boolean;
+    hasRitual: boolean;
+}
+
+const DEFAULT_SESSION_MINUTES = 2;
+
+const sanitizeSummary = (content: string) => {
+    return content
+        .replace(/```[\s\S]*?```/g, "")
+        .replace(/\[(.*?)\]\((.*?)\)/g, "$1")
+        .replace(/[\*_`~]/g, "")
+        .trim()
+        .slice(0, 140);
+};
+
+const formatEta = (minutes?: number | null) => {
+    if (!minutes || minutes <= 0) return "--:--";
+    const mins = Math.max(1, Math.round(minutes));
+    return `${String(mins).padStart(2, '0')}:00`;
+};
+
+const formatEtaFromMs = (ms: number) => {
+    if (ms <= 0) return "00:00";
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+};
+
+const createIdleActivity = (): ActivityState => ({
+    sessionId: null,
+    title: "No ritual running",
+    subtitle: "Ask VibeCheck for a micro-reset or action suggestion to begin.",
+    mode: "idle",
+    progress: 0,
+    eta: "--:--",
+    hasMusic: false,
+    hasRitual: false,
+    durationMinutes: null,
+    startedAt: null,
+    elapsedMs: 0,
+});
+
+const isActionSuggestion = (suggestion: Suggestion): suggestion is ActionSuggestion => suggestion.type === "action";
+const isMusicSuggestion = (suggestion: Suggestion): suggestion is MusicSuggestion => suggestion.type === "music";
+
+const parseMinutesFromDurationString = (value?: string | null): number | null => {
+    if (!value) return null;
+    const trimmed = value.trim().toLowerCase();
+    const minuteMatch = trimmed.match(/([\d.]+)\s*min/);
+    if (minuteMatch) {
+        const parsed = parseFloat(minuteMatch[1]);
+        return Number.isFinite(parsed) ? parsed : null;
+    }
+    const secondsMatch = trimmed.match(/(\d+)\s*s/);
+    if (secondsMatch) {
+        const seconds = parseInt(secondsMatch[1], 10);
+        return Number.isFinite(seconds) ? seconds / 60 : null;
+    }
+    return null;
+};
+
+const deriveMinutesFromMusic = (musicSuggestion?: MusicSuggestion): number | null => {
+    if (!musicSuggestion?.subtitle) return null;
+    const subtitleParts = musicSuggestion.subtitle.split('•');
+    const durationHint = subtitleParts[subtitleParts.length - 1];
+    return parseMinutesFromDurationString(durationHint);
+};
+
+const getLatestSession = (messages: Message[]): DerivedSession | null => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+        const message = messages[i];
+        if (message.type !== "assistant" || !message.suggestions?.length) continue;
+
+        const actionSuggestion = message.suggestions.find(isActionSuggestion);
+        const musicSuggestion = message.suggestions.find(isMusicSuggestion);
+        if (!actionSuggestion && !musicSuggestion) continue;
+
+        const minutes = actionSuggestion?.minutes
+            ?? deriveMinutesFromMusic(musicSuggestion)
+            ?? DEFAULT_SESSION_MINUTES;
+
+        const title = actionSuggestion?.label
+            ?? musicSuggestion?.title
+            ?? "Mindful Micro-reset";
+
+        const summary = sanitizeSummary(message.content)
+            || musicSuggestion?.subtitle
+            || "Take a quick grounding pause.";
+
+        return {
+            sessionId: message.id,
+            title,
+            summary,
+            minutes,
+            hasMusic: Boolean(musicSuggestion),
+            hasRitual: Boolean(actionSuggestion),
+        };
+    }
+    return null;
+};
+
+export default function ActiveSession() {
+    const { resolvedTheme } = useTheme();
+    const messages = useMessagesStore((state) => state.messages);
+    const latestSessionSuggestion = useMemo(() => getLatestSession(messages), [messages]);
+    const [currentActivity, setCurrentActivity] = useState<ActivityState>(() => createIdleActivity());
     const [soundWave, setSoundWave] = useState(Array(12).fill(0.5));
     const [isHydrated, setIsHydrated] = useState(false);
     const [isExpanded, setIsExpanded] = useState(true);
@@ -63,17 +179,115 @@ export default function ActiveSession() {
         }
     }, [currentActivity.mode, currentActivity.hasMusic]);
 
+    useEffect(() => {
+        if (!latestSessionSuggestion) {
+            setCurrentActivity((prev) => {
+                if (prev.mode === "idle") return prev;
+                return createIdleActivity();
+            });
+            return;
+        }
+
+        setCurrentActivity((prev) => {
+            if (prev.sessionId === latestSessionSuggestion.sessionId) {
+                return {
+                    ...prev,
+                    title: latestSessionSuggestion.title,
+                    subtitle: latestSessionSuggestion.summary,
+                    hasMusic: latestSessionSuggestion.hasMusic,
+                    hasRitual: latestSessionSuggestion.hasRitual,
+                };
+            }
+
+            return {
+                sessionId: latestSessionSuggestion.sessionId,
+                title: latestSessionSuggestion.title,
+                subtitle: latestSessionSuggestion.summary,
+                mode: "running",
+                progress: 0,
+                eta: formatEta(latestSessionSuggestion.minutes),
+                hasMusic: latestSessionSuggestion.hasMusic,
+                hasRitual: latestSessionSuggestion.hasRitual,
+                durationMinutes: latestSessionSuggestion.minutes,
+                startedAt: Date.now(),
+                elapsedMs: 0,
+            };
+        });
+    }, [latestSessionSuggestion]);
+
+    useEffect(() => {
+        if (currentActivity.mode !== "running" || !currentActivity.startedAt || !currentActivity.durationMinutes) {
+            return;
+        }
+
+        const interval = setInterval(() => {
+            setCurrentActivity((prev) => {
+                if (prev.mode !== "running" || !prev.startedAt || !prev.durationMinutes) return prev;
+
+                const durationMs = prev.durationMinutes * 60 * 1000;
+                const elapsed = prev.elapsedMs + (Date.now() - prev.startedAt);
+                const progress = Math.min(elapsed / durationMs, 1);
+                const remainingMs = Math.max(durationMs - elapsed, 0);
+
+                if (progress >= 1) {
+                    return {
+                        ...prev,
+                        progress: 1,
+                        eta: "00:00",
+                        mode: "completed",
+                        startedAt: null,
+                        elapsedMs: durationMs,
+                    };
+                }
+
+                return {
+                    ...prev,
+                    progress,
+                    eta: formatEtaFromMs(remainingMs),
+                };
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [currentActivity.mode, currentActivity.startedAt, currentActivity.durationMinutes]);
+
     const togglePlayPause = () => {
+        if (currentActivity.mode === "idle") return;
         handleInteraction();
-        setCurrentActivity(prev => ({
-            ...prev,
-            mode: prev.mode === "running" ? "paused" : "running"
-        }));
+        setCurrentActivity(prev => {
+            if (prev.mode === "running") {
+                const elapsedIncrement = prev.startedAt ? Date.now() - prev.startedAt : 0;
+                return {
+                    ...prev,
+                    mode: "paused",
+                    startedAt: null,
+                    elapsedMs: prev.elapsedMs + elapsedIncrement,
+                };
+            }
+
+            if (prev.mode === "paused") {
+                return {
+                    ...prev,
+                    mode: "running",
+                    startedAt: Date.now(),
+                };
+            }
+
+            return prev;
+        });
     };
 
     const endSession = () => {
+        if (currentActivity.mode === "idle") return;
         handleInteraction();
-        setCurrentActivity(prev => ({ ...prev, mode: "completed" }));
+        setCurrentActivity(prev => ({
+            ...prev,
+            mode: "completed",
+            startedAt: null,
+            elapsedMs: prev.durationMinutes ? prev.durationMinutes * 60 * 1000 : prev.elapsedMs,
+            progress: 1,
+            eta: "00:00",
+        }));
     };
 
     const statusConfig = {
@@ -84,7 +298,7 @@ export default function ActiveSession() {
     };
 
     const status = statusConfig[currentActivity.mode];
-    const progressDegrees = currentActivity.progress * 270;
+    const progressDegrees = Math.min(Math.max(currentActivity.progress, 0), 1) * 270;
     const isDark = resolvedTheme === 'dark';
 
     if (!isHydrated) {
@@ -105,7 +319,7 @@ export default function ActiveSession() {
                 {/* Main Card */}
                 <div
                     className="relative group cursor-pointer"
-                    onClick={() => setIsExpanded(!isExpanded)}>
+                    onClick={() => setIsExpanded(currentActivity.mode === 'idle' ? isExpanded : !isExpanded)}>
                     {/* Ambient glow effect that follows the card */}
                     <div
                         className={`absolute -inset-1 bg-gradient-to-r from-emerald-500/20 via-sky-500/20 to-purple-500/20 rounded-3xl blur-2xl transition-all duration-700 ${isExpanded ? 'opacity-75 group-hover:opacity-100' : 'opacity-40'
@@ -118,7 +332,7 @@ export default function ActiveSession() {
                     <div
                         className={`relative overflow-hidden border ${isDark ? 'border-white/10 bg-gradient-to-br from-zinc-900/90 via-zinc-800/50 to-zinc-900/90' : 'border-zinc-200 bg-gradient-to-br from-white/95 via-zinc-50/80 to-white/95'} backdrop-blur-xl transition-all duration-700 ease-in-out rounded-md`}
                         style={{
-                            height: isExpanded ? '302.3px' : '56px',
+                            height: isExpanded ? (currentActivity.mode === 'idle' ? '125px' : '302.3px') : '56px',
                         }}
                     >
                         {/* Animated mesh gradient background */}
@@ -351,67 +565,65 @@ export default function ActiveSession() {
                                             <Zap className="w-2.5 h-2.5 text-emerald-400/70" />
                                         </div>
                                     )}
-                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${isDark ? 'bg-white/5' : 'bg-zinc-100'} border ml-auto border-border `}>
-                                        <Clock className="w-3 h-3 text-purple-400" />
-                                        <span className={`text-[10px] font-bold ${isDark ? 'text-white/90' : 'text-zinc-900'}`}>{currentActivity.eta}</span>
-                                    </div>
+                                    {currentActivity.mode !== "idle" && (
+                                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${isDark ? 'bg-white/5' : 'bg-zinc-100'} border ml-auto border-border `}>
+                                            <Clock className="w-3 h-3 text-purple-400" />
+                                            <span className={`text-[10px] font-bold ${isDark ? 'text-white/90' : 'text-zinc-900'}`}>{currentActivity.eta}</span>
+                                        </div>
+                                    )}
                                 </div>
+                                {currentActivity.mode === "idle" ? null : (
+                                    <div className='flex justify-center items-center gap-4'>
+                                        <div className="relative w-full ">
+                                            <div className={`h-1 w-full ${isDark ? 'bg-white/5' : 'bg-zinc-200'} rounded-full overflow-hidden`}>
+                                                <div
+                                                    className="h-full bg-gradient-to-r from-emerald-400 via-sky-400 to-purple-400 rounded-full transition-all duration-500 relative"
+                                                    style={{ width: `${currentActivity.progress * 100}%` }}
+                                                >
+                                                    <div className="absolute inset-0 bg-white/30 animate-shimmer" />
+                                                </div>
+                                            </div>
+                                            {/* Progress text */}
+                                            <div className={`flex justify-between items-center mt-2 text-[10px] ${isDark ? 'text-white/40' : 'text-zinc-500'}`}>
+                                                <span>In sync with your flow</span>
+                                                <span className={`font-mono ${isDark ? 'text-white/60' : 'text-zinc-700'}`}>{currentActivity.eta} remaining</span>
+                                            </div>
+                                        </div>
 
-                                <div className='flex justify-center items-center gap-4'>
-                                    <div className="relative w-full ">
-                                        <div className={`h-1 w-full ${isDark ? 'bg-white/5' : 'bg-zinc-200'} rounded-full overflow-hidden`}>
-                                            <div
-                                                className="h-full bg-gradient-to-r from-emerald-400 via-sky-400 to-purple-400 rounded-full transition-all duration-500 relative"
-                                                style={{ width: `${currentActivity.progress * 100}%` }}
+                                        {/* Control buttons - floating style */}
+                                        <div className="flex items-center gap-2 justify-between w-[35%]">
+                                            {/* Play/Pause Button */}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    togglePlayPause();
+                                                }}
+                                                className="flex-1 group/btn relative overflow-hidden rounded-sm bg-background hover:bg-background/80 border border-border hover:border-primary/50 transition-all duration-300 backdrop-blur-sm"
                                             >
-                                                <div className="absolute inset-0 bg-white/30 animate-shimmer" />
-                                            </div>
-                                        </div>
-                                        {/* Progress text */}
-                                        <div className={`flex justify-between items-center mt-2 text-[10px] ${isDark ? 'text-white/40' : 'text-zinc-500'}`}>
-                                            <span>In sync with your flow</span>
-                                            <span className={`font-mono ${isDark ? 'text-white/60' : 'text-zinc-700'}`}>{currentActivity.eta} remaining</span>
-                                        </div>
-                                    </div>
+                                                <div className="relative px-4 h-11 flex items-center justify-center gap-2">
+                                                    {currentActivity.mode === "running" ? (
+                                                        <Pause className="w-4 h-4 text-muted-foreground group-hover/btn:text-primary transition-colors duration-300" />
+                                                    ) : (
+                                                        <Play className="w-4 h-4 text-muted-foreground group-hover/btn:text-primary transition-colors duration-300" />
+                                                    )}
+                                                    <span className="text-sm font-medium text-muted-foreground group-hover/btn:text-foreground transition-colors duration-300">
+                                                        {currentActivity.mode === "running" ? "Pause" : "Resume"}
+                                                    </span>
+                                                </div>
+                                            </button>
 
-                                    {/* Control buttons - floating style */}
-                                    <div className="flex items-center gap-2 justify-between w-[35%]">
-                                        {/* Play/Pause Button */}
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                togglePlayPause();
-                                            }}
-                                            onMouseEnter={() => setHoveredAction('play')}
-                                            onMouseLeave={() => setHoveredAction(null)}
-                                            className="flex-1 group/btn relative overflow-hidden rounded-sm bg-background hover:bg-background/80 border border-border hover:border-primary/50 transition-all duration-300 backdrop-blur-sm"
-                                        >
-                                            <div className="relative px-4 h-11 flex items-center justify-center gap-2">
-                                                {currentActivity.mode === "running" ? (
-                                                    <Pause className="w-4 h-4 text-muted-foreground group-hover/btn:text-primary transition-colors duration-300" />
-                                                ) : (
-                                                    <Play className="w-4 h-4 text-muted-foreground group-hover/btn:text-primary transition-colors duration-300" />
-                                                )}
-                                                <span className="text-sm font-medium text-muted-foreground group-hover/btn:text-foreground transition-colors duration-300">
-                                                    {currentActivity.mode === "running" ? "Pause" : "Resume"}
-                                                </span>
-                                            </div>
-                                        </button>
-
-                                        {/* End Button */}
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                endSession();
-                                            }}
-                                            onMouseEnter={() => setHoveredAction('end')}
-                                            onMouseLeave={() => setHoveredAction(null)}
-                                            className="relative rounded-sm bg-background hover:bg-background/80 border border-border hover:border-destructive/50 transition-all duration-300 backdrop-blur-sm px-4 h-11 group/end"
-                                        >
-                                            <Square className="w-4 h-4 text-muted-foreground group-hover/end:text-destructive transition-colors duration-300" />
-                                        </button>
-                                    </div>
-                                </div>
+                                            {/* End Button */}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    endSession();
+                                                }}
+                                                className={`relative rounded-sm border transition-all duration-300 backdrop-blur-sm px-4 h-11 group/end bg-background hover:bg-background/80 border-border hover:border-destructive/50`}
+                                            >
+                                                <Square className="w-4 h-4 text-muted-foreground group-hover/end:text-destructive transition-colors duration-300" />
+                                            </button>
+                                        </div>
+                                    </div>)}
 
                             </div>
                         </div>
