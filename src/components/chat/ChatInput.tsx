@@ -228,6 +228,7 @@ export function ChatInput({
                       <Button
                         variant="ghost"
                         size="sm"
+                        disabled={true}
                         className={`h-7 px-2 text-xs text-muted-foreground hover:text-foreground transition-colors`}
                         onClick={onOpenSettings}
                       >
